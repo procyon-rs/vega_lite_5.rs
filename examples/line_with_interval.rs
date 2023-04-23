@@ -1,4 +1,4 @@
-use vega_lite_4::*;
+use vega_lite_5::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // The chart
@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .build()?,
         )
         .layer(vec![
-            LayerElementBuilder::default()
+            LayerSpecBuilder::default()
                 .mark(Mark::Line)
                 .encoding(
                     LayerEncodingBuilder::default()
@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .build()?,
                 )
                 .build()?,
-            LayerElementBuilder::default()
+            LayerSpecBuilder::default()
                 .mark(
                     DefBuilder::default()
                         .def_type(Mark::Errorband)
