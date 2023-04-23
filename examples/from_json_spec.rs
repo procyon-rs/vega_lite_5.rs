@@ -1,4 +1,3 @@
-use serde_json;
 use vega_lite_5::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

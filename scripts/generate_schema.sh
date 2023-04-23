@@ -6,7 +6,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)"
 
 file=${1:-"${DIR}/src/schema.rs"}
 
-npm install quicktype --prefix ${DIR}
+npm install quicktype --prefix "${DIR}"
 
 url=https://vega.github.io/schema/vega-lite/v5.json
 escaped_url=$(echo $url | sed 's#/#\\\/#g')
@@ -17,10 +17,10 @@ echo '-- replace "const" by enum with one value'
 sed -i 's/"const": \(.*\),/"enum": [\1],/' schema.json
 
 echo '-- generating file from schema'
-${DIR}/node_modules/.bin/quicktype \
+"${DIR}/node_modules/.bin/quicktype" \
   --src schema.json \
   --src-lang schema \
-  --out $file \
+  --out "$file" \
   --top-level Vegalite \
   --density dense \
   --visibility public \
@@ -28,7 +28,7 @@ ${DIR}/node_modules/.bin/quicktype \
   --no-edition-2018
 
 echo '-- remove extra comments'
-sed -i '/^\/\/[^\/]*$/d' $file
+sed -i '/^\/\/[^\/]*$/d' "$file"
 
 echo '-- inserting license and lint'
 cat <<EOF >tmp_schema.rs
@@ -47,88 +47,88 @@ cat <<EOF >tmp_schema.rs
 #![allow(missing_docs, clippy::large_enum_variant)]
 
 EOF
-cat $file >>tmp_schema.rs
-mv tmp_schema.rs $file
+cat "$file" >>tmp_schema.rs
+mv tmp_schema.rs "$file"
 
 echo '-- fix serde import'
-# sed -i 's/extern crate serde_json;/use serde::{Deserialize, Serialize};/' $file
-sed -i 's/extern crate serde_derive;/use serde::{Deserialize, Serialize};/' $file
+# sed -i 's/extern crate serde_json;/use serde::{Deserialize, Serialize};/' "$file"
+sed -i 's/extern crate serde_derive;/use serde::{Deserialize, Serialize};/' "$file"
 
 echo '-- set fields that have special meaning for null'
 sed -i '/use serde::/i\
-use crate::removable_value::RemovableValue;' $file
-python3 scripts/if_null_fields.py $file tmp_schema.rs && mv tmp_schema.rs $file
+use crate::removable_value::RemovableValue;' "$file"
+python3 scripts/if_null_fields.py "$file" tmp_schema.rs && mv tmp_schema.rs "$file"
 
 echo '-- custom changes'
-python3 scripts/custom_changes.py $file tmp_schema.rs && mv tmp_schema.rs $file
+python3 scripts/custom_changes.py "$file" tmp_schema.rs && mv tmp_schema.rs "$file"
 
 echo '-- skip serializing None by default'
-sed -i 's/pub \(\w*\): Option/#[serde(skip_serializing_if = "Option::is_none")] pub \1: Option/' $file
+sed -i 's/pub \(\w*\): Option/#[serde(skip_serializing_if = "Option::is_none")] pub \1: Option/' "$file"
 
 echo '-- fix Box usage'
-sed -i 's/Option<Box>/Option<DefBox>/' $file
-sed -i 's/enum Box {/enum DefBox {/' $file
+sed -i 's/Option<Box>/Option<DefBox>/' "$file"
+sed -i 's/enum Box {/enum DefBox {/' "$file"
 
 echo '-- make everything clonable and default'
-sed -i 's/#\[derive(Debug, Serialize, Deserialize)\]/#[derive(Debug, Clone, Serialize, Deserialize)]/' $file
-sed -i 's/pub struct/#[derive(Default)] pub struct/' $file
+sed -i 's/#\[derive(Debug, Serialize, Deserialize)\]/#[derive(Debug, Clone, Serialize, Deserialize)]/' "$file"
+sed -i 's/pub struct/#[derive(Default)] pub struct/' "$file"
 
 echo '-- setup builder'
 sed -i '/use serde::/i\
-use derive_builder::Builder;' $file
-sed -i 's/pub struct/#[derive(Builder)] pub struct/' $file
-sed -i 's/pub struct/#[builder(setter(into, strip_option))] pub struct/' $file
-sed -i 's/pub \(\w*\): Option/#[builder(default)] pub \1: Option/' $file
-sed -i "s/#\[builder(default)\] pub schema: Option/#[builder(default = \"Some(\\\\\"$escaped_url\\\\\".to_string())\")] pub schema: Option/" $file
+use derive_builder::Builder;' "$file"
+sed -i 's/pub struct/#[derive(Builder)] pub struct/' "$file"
+sed -i 's/pub struct/#[builder(setter(into, strip_option))] pub struct/' "$file"
+sed -i 's/pub \(\w*\): Option/#[builder(default)] pub \1: Option/' "$file"
+sed -i "s/#\[builder(default)\] pub schema: Option/#[builder(default = \"Some(\\\\\"$escaped_url\\\\\".to_string())\")] pub schema: Option/" "$file"
 
-sed -i 's/pub \(\w*\): \([^<]*\),$/#[serde(skip_serializing_if = "Option::is_none")] #[builder(default)] pub \1: Option<\2>,/' $file
+sed -i 's/pub \(\w*\): \([^<]*\),$/#[serde(skip_serializing_if = "Option::is_none")] #[builder(default)] pub \1: Option<\2>,/' "$file"
 
 echo '-- simplification'
-sed -i 's/pub enum InlineDataset /#[allow(unused)]enum UnusedInlineDataset /' $file
-sed -i 's/<InlineDataset>/<serde_json::value::Value>/' $file
-sed -i 's/BoxPlotDefClass/MarkDefClass/g' $file
-sed -i 's/BoxPlotDefExtent/MarkDefExtent/' $file
-sed -i 's/Enum(BoxPlot)/Enum(Mark)/' $file
-sed -i 's/<BoxPlot>/<Mark>/' $file
-sed -i 's/pub enum BoxPlot /pub enum Mark /' $file
+sed -i 's/pub enum InlineDataset /#[allow(unused)]enum UnusedInlineDataset /' "$file"
+sed -i 's/<InlineDataset>/<serde_json::value::Value>/' "$file"
+sed -i 's/BoxPlotDefClass/MarkDefClass/g' "$file"
+sed -i 's/BoxPlotDefExtent/MarkDefExtent/' "$file"
+sed -i 's/Enum(BoxPlot)/Enum(Mark)/' "$file"
+sed -i 's/<BoxPlot>/<Mark>/' "$file"
+sed -i 's/pub enum BoxPlot /pub enum Mark /' "$file"
 
-sed -i 's/pub \(\w*\): Box<Option<\(\S*\)>>/#[serde(skip_serializing_if = "Option::is_none")] #[builder(default)] pub \1: Option<\2>/' $file
-#sed -i 's/pub filter: Option<Box<ConditionalValueDefGradientStringNullLogicalOperandPredicatePredicate>>,/pub filter: Option<ConditionalValueDefGradientStringNullLogicalOperandPredicatePredicate>,/' $file
+sed -i 's/pub \(\w*\): Box<Option<\(\S*\)>>/#[serde(skip_serializing_if = "Option::is_none")] #[builder(default)] pub \1: Option<\2>/' "$file"
+#sed -i 's/pub filter: Option<Box<ConditionalValueDefGradientStringNullLogicalOperandPredicatePredicate>>,/pub filter: Option<ConditionalValueDefGradientStringNullLogicalOperandPredicatePredicate>,/' "$file"
 
 echo '-- From for enums'
 sed -i '/use serde::/i\
-use derive_more::From;' $file
-sed -i 's/#\[serde(untagged)\]$/#[serde(untagged)] #[derive(From)]/' $file
+use derive_more::From;' "$file"
+sed -i 's/#\[serde(untagged)\]$/#[serde(untagged)] #[derive(From)]/' "$file"
 
 echo '-- Fix doc links'
-sed -i 's/types#datetime/struct.DateTime.html/' $file
+sed -i 's/types#datetime/struct.DateTime.html/' "$file"
 
 echo '-- allocation on heap to reduce stack use'
 # Boxing of some fields to avoid the following error
 #   test tests::serde_should_not_failed_on_empty ...
 #   thread 'main' has overflowed its stack
 #   fatal runtime error: stack overflow
-#sed -i 's/: Option<\([A-Z][a-zA-Z0-9]*\))>>/: Option<Box<\1>>/' $file
-sed -i 's/: Option<SpecSpec>/: Option<Box<SpecSpec>>/' $file
-sed -i 's/: Option<Autosize>/: Option<Box<Autosize>>/' $file
-sed -i 's/: Option<Bounds>/: Option<Box<Bounds>>/' $file
-sed -i 's/: Option<Center>/: Option<Box<Center>>/' $file
-sed -i 's/: Option<Projection>/: Option<Box<Projection>>/' $file
-sed -i 's/: Option<Resolve>/: Option<Box<Resolve>>/' $file
-sed -i 's/: Option<Spacing>/: Option<Box<Spacing>>/' $file
-sed -i 's/: Option<Facet>/: Option<Box<Facet>>/' $file
-sed -i 's/: Option<RepeatUnion>/: Option<Box<RepeatUnion>>/' $file
-sed -i 's/: Option<ViewBackground>/: Option<Box<ViewBackground>>/' $file
-sed -i 's/: Option<VegaliteSpec>/: Option<Box<VegaliteSpec>>/' $file
-sed -i 's/: Option<VegaliteAlign>/: Option<Box<VegaliteAlign>>/' $file
-sed -i 's/: Option<ConfigClass>/: Option<Box<ConfigClass>>/' $file
-sed -i 's/: Option<EdEncoding>/: Option<Box<EdEncoding>>/' $file
-sed -i 's/: Option<Color>/: Option<Box<Color>>/' $file
-sed -i 's/: Option<Padding>/: Option<Box<Padding>>/' $file
+#sed -i 's/: Option<\([A-Z][a-zA-Z0-9]*\))>>/: Option<Box<\1>>/' "$file"
+sed -i 's/: Option<SpecSpec>/: Option<Box<SpecSpec>>/' "$file"
+sed -i 's/: Option<Autosize>/: Option<Box<Autosize>>/' "$file"
+sed -i 's/: Option<Bounds>/: Option<Box<Bounds>>/' "$file"
+sed -i 's/: Option<Center>/: Option<Box<Center>>/' "$file"
+sed -i 's/: Option<Projection>/: Option<Box<Projection>>/' "$file"
+sed -i 's/: Option<Resolve>/: Option<Box<Resolve>>/' "$file"
+sed -i 's/: Option<Spacing>/: Option<Box<Spacing>>/' "$file"
+sed -i 's/: Option<Facet>/: Option<Box<Facet>>/' "$file"
+sed -i 's/: Option<RepeatUnion>/: Option<Box<RepeatUnion>>/' "$file"
+sed -i 's/: Option<ViewBackground>/: Option<Box<ViewBackground>>/' "$file"
+sed -i 's/: Option<VegaliteSpec>/: Option<Box<VegaliteSpec>>/' "$file"
+sed -i 's/: Option<VegaliteAlign>/: Option<Box<VegaliteAlign>>/' "$file"
+sed -i 's/: Option<ConfigClass>/: Option<Box<ConfigClass>>/' "$file"
+sed -i 's/: Option<EdEncoding>/: Option<Box<EdEncoding>>/' "$file"
+sed -i 's/: Option<Color>/: Option<Box<Color>>/' "$file"
+sed -i 's/: Option<Padding>/: Option<Box<Padding>>/' "$file"
 
-sed -i 's/Step(Step)/Step(Box<Step>)/' $file
-sed -i 's/TitleParams(TitleParams)/TitleParams(Box<TitleParams>)/' $file
+sed -i 's/Step(Step)/Step(Box<Step>)/' "$file"
+sed -i 's/TitleParams(TitleParams)/TitleParams(Box<TitleParams>)/' "$file"
 
-cargo fmt -- $file
+cargo fmt -- "$file"
 
-rm ${DIR}/schema.json
+rm "${DIR}/schema.json"

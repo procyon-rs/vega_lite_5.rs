@@ -1,30 +1,24 @@
 use vega_lite_5::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut selector_1 = vec![];
-    selector_1.push(
-        SelectionParameterBuilder::default()
-            .name("brush")
-            .select(
-                SelectionConfigBuilder::default()
-                    .selection_config_type(SelectionType::Interval)
-                    .encodings(vec![SingleDefUnitChannel::X])
-                    .build()?,
-            )
-            .build()?,
-    );
-    let mut selector_2 = vec![];
-    selector_2.push(
-        SelectionParameterBuilder::default()
-            .name("click")
-            .select(ParamSelect::SelectionConfig(
-                SelectionConfigBuilder::default()
-                    .selection_config_type(SelectionType::Point)
-                    .encodings(vec![SingleDefUnitChannel::Color])
-                    .build()?,
-            ))
-            .build()?,
-    );
+    let selector_1 = vec![SelectionParameterBuilder::default()
+        .name("brush")
+        .select(
+            SelectionConfigBuilder::default()
+                .selection_config_type(SelectionType::Interval)
+                .encodings(vec![SingleDefUnitChannel::X])
+                .build()?,
+        )
+        .build()?];
+    let selector_2 = vec![SelectionParameterBuilder::default()
+        .name("click")
+        .select(ParamSelect::SelectionConfig(
+            SelectionConfigBuilder::default()
+                .selection_config_type(SelectionType::Point)
+                .encodings(vec![SingleDefUnitChannel::Color])
+                .build()?,
+        ))
+        .build()?];
 
     let chart = VegaliteBuilder::default()
     .title("Seattle Weather, 2012-2015")
