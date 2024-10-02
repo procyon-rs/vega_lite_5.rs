@@ -47,6 +47,7 @@ pub use showata::Showable;
 pub use data::*;
 pub use removable_value::RemovableValue;
 pub use schema::*;
+#[allow(unused_imports)]
 pub use string::*;
 
 #[cfg(test)]
