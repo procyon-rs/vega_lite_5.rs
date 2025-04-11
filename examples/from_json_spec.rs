@@ -3,7 +3,7 @@ use vega_lite_5::*;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let spec = r##"
 {
-  "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
   "description": "A population pyramid for the US in 2000, created using stack. See https://vega.github.io/vega-lite/examples/concat_population_pyramid.html for a variant of this created using concat.",
   "data": { "url": "https://raw.githubusercontent.com/vega/vega-datasets/master/data/population.json"},
   "transform": [

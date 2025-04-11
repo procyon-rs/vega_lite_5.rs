@@ -22,7 +22,7 @@ impl Showable for Vegalite {
         let content = serde_json::to_string(self)?;
         Ok(ContentInfo {
             content,
-            mime_type: "application/vnd.vegalite.v4+json".into(),
+            mime_type: "application/vnd.vegalite.v5+json".into(),
         })
     }
 

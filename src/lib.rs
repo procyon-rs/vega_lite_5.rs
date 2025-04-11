@@ -12,7 +12,7 @@
 
 //! This crate provides a thin wrapper over Vega-Lite v4, as well as a few helpers to help ingest data from
 //! various sources and builders to help build graphs. See
-//! [examples](https://github.com/procyon-rs/vega_lite_4.rs/tree/master/examples) for more help on how to use it.
+//! [examples](https://github.com/procyon-rs/vega_lite_5.rs/tree/master/examples) for more help on how to use it.
 //!
 //! ## Documentation Disclaimer
 //!

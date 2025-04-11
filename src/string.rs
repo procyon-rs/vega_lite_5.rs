@@ -70,6 +70,7 @@ from_into_string!(
     FluffyRange,
     Format,
     GridColorUnion,
+    Id,
     InlineDatasetValue,
     LegendText,
     Lt,
@@ -83,12 +84,14 @@ from_into_string!(
     PrimitiveValue,
     PurpleStream,
     RangeM,
-    Scheme,
+    RangeText,
+    ScaleInvalidDataShowAsValueColorValue,
+    ScaleInvalidDataShowAsValueFillValue,
     SelectionInit,
-    SelectionInitInterval,
-    TextElement,
     TitleUnion,
     Toggle,
+    TransformExtent,
+    UnionWith,
     UrlDataInlineDataset,
 );
 
@@ -173,11 +176,11 @@ macro_rules! from_into_array_of_str_opt{
 //   xargs -I {} sh -c 'grep -B 5 \"{}\" src/schema.rs | grep \"pub enum\" | sed \"s/pub enum \(.*\) {/\1/\" | \
 //     xargs -I $ sh -c \"echo \\\"$::{}\\\"\"'" | sort | uniq
 from_into_array_of_str!(
-    DateTimeValue::UnionArray(Vec<SelectionInitInterval>),
+    DateTimeValue::UnionArray(Vec<UnionWith>),
     ScaleRange::UnionArray(Vec<FluffyRange>),
-    SortArray::UnionArray(Vec<SelectionInitInterval>),
-    SortUnion::UnionArray(Vec<SelectionInitInterval>),
-    Values::UnionArray(Vec<SelectionInitInterval>),
+    SortArray::UnionArray(Vec<UnionWith>),
+    SortUnion::UnionArray(Vec<UnionWith>),
+    Values::UnionArray(Vec<UnionWith>),
 );
 from_into_array_of_str_opt!(DomainUnion::UnionArray(Vec<Option<DomainElement>>),);
 

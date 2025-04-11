@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .x(XClassBuilder::default()
                     .field("Year")
                     .position_def_type(Type::Temporal)
-                    .time_unit(TimeUnit::Year)
+                    .time_unit(BinnedTimeUnitEnum::Year)
                     .build()?)
                 .build()?,
         )

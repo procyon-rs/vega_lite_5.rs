@@ -294,6 +294,29 @@ pub struct Vegalite {
     pub hconcat: Option<Vec<Spec>>,
 }
 
+/// The alignment to apply to grid rows and columns. The supported string values are `"all"`,
+/// `"each"`, and `"none"`.
+///
+/// - For `"none"`, a flow layout will be used, in which adjacent subviews are simply placed
+/// one after the other.
+/// - For `"each"`, subviews will be aligned into a clean grid structure, but each row or
+/// column may be of variable size.
+/// - For `"all"`, subviews will be aligned and each row or column will be sized identically
+/// based on the maximum observed size. String values for this property will be applied to
+/// both grid rows and columns.
+///
+/// Alternatively, an object value of the form `{"row": string, "column": string}` can be
+/// used to supply different alignments for rows and columns.
+///
+/// __Default value:__ `"all"`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum VegaliteAlign {
+    Enum(LayoutAlign),
+    RowColLayoutAlign(RowColLayoutAlign),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct RowColLayoutAlign {
@@ -303,6 +326,45 @@ pub struct RowColLayoutAlign {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub row: Option<LayoutAlign>,
+}
+
+/// The alignment to apply to symbol legends rows and columns. The supported string values
+/// are `"all"`, `"each"` (the default), and `none`. For more information, see the [grid
+/// layout documentation](https://vega.github.io/vega/docs/layout).
+///
+/// __Default value:__ `"each"`.
+///
+/// The alignment to apply to row/column facet's subplot. The supported string values are
+/// `"all"`, `"each"`, and `"none"`.
+///
+/// - For `"none"`, a flow layout will be used, in which adjacent subviews are simply placed
+/// one after the other.
+/// - For `"each"`, subviews will be aligned into a clean grid structure, but each row or
+/// column may be of variable size.
+/// - For `"all"`, subviews will be aligned and each row or column will be sized identically
+/// based on the maximum observed size. String values for this property will be applied to
+/// both grid rows and columns.
+///
+/// __Default value:__ `"all"`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LayoutAlign {
+    All,
+    Each,
+    None,
+}
+
+/// How the visualization size should be determined. If a string, should be one of `"pad"`,
+/// `"fit"` or `"none"`. Object values can additionally specify parameters for content sizing
+/// and automatic resizing.
+///
+/// __Default value__: `pad`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Autosize {
+    AutoSizeParams(AutoSizeParams),
+    Enum(AutosizeType),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -336,6 +398,56 @@ pub struct AutoSizeParams {
     pub auto_size_params_type: Option<AutosizeType>,
 }
 
+/// The sizing format type. One of `"pad"`, `"fit"`, `"fit-x"`, `"fit-y"`,  or `"none"`. See
+/// the [autosize type](https://vega.github.io/vega-lite/docs/size.html#autosize)
+/// documentation for descriptions of each.
+///
+/// __Default value__: `"pad"`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum AutosizeType {
+    Fit,
+    #[serde(rename = "fit-x")]
+    FitX,
+    #[serde(rename = "fit-y")]
+    FitY,
+    None,
+    Pad,
+}
+
+/// Determines how size calculation should be performed, one of `"content"` or `"padding"`.
+/// The default setting (`"content"`) interprets the width and height settings as the data
+/// rectangle (plotting) dimensions, to which padding is then added. In contrast, the
+/// `"padding"` setting includes the padding within the view size calculations, such that the
+/// width and height settings indicate the **total** intended size of the view.
+///
+/// __Default value__: `"content"`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Contains {
+    Content,
+    Padding,
+}
+
+/// CSS color property to use as the background of the entire view.
+///
+/// __Default value:__ `"white"`
+///
+/// The color of the header label, can be in hex color code or regular color name.
+///
+/// Color of the header title, can be in hex color code or regular color name.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Color {
+    BackgroundExprRef(BackgroundExprRef),
+    String(String),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct BackgroundExprRef {
@@ -343,6 +455,31 @@ pub struct BackgroundExprRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub expr: Option<String>,
+}
+
+/// The bounds calculation method to use for determining the extent of a sub-plot. One of
+/// `full` (the default) or `flush`.
+///
+/// - If set to `full`, the entire calculated bounds (including axes, title, and legend) will
+/// be used.
+/// - If set to `flush`, only the specified width and height values for the sub-view will be
+/// used. The `flush` setting can be useful when attempting to place sub-plots without axes
+/// or legends into a uniform grid structure.
+///
+/// __Default value:__ `"full"`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Bounds {
+    Flush,
+    Full,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Center {
+    Bool(bool),
+    RowColBoolean(RowColBoolean),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -375,11 +512,6 @@ pub struct RowColBoolean {
 /// Base interface for a vertical concatenation specification.
 ///
 /// Base interface for a horizontal concatenation specification.
-///
-/// A unit specification, which can contain either [primitive marks or composite
-/// marks](https://vega.github.io/vega-lite/docs/mark.html#types).
-///
-/// Base interface for a unit (single-view) specification.
 ///
 /// A specification of the view that gets faceted.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -944,7 +1076,32 @@ pub struct DataFormat {
     pub mesh: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+/// Type of input data: `"json"`, `"csv"`, `"tsv"`, `"dsv"`.
+///
+/// __Default value:__  The default format type is determined by the extension of the file
+/// URL. If no extension is detected, `"json"` will be used by default.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DataFormatType {
+    Csv,
+    Dsv,
+    Json,
+    Topojson,
+    Tsv,
+}
+
+/// Generate graticule GeoJSON data for geographic reference lines.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Graticule {
+    Bool(bool),
+    GraticuleParams(GraticuleParams),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct GraticuleParams {
     /// Sets both the major and minor extents to the same values.
@@ -952,12 +1109,10 @@ pub struct GraticuleParams {
     #[builder(default)]
     pub extent: Option<Vec<Vec<f64>>>,
     /// The major extent of the graticule as a two-element array of coordinates.
-    #[serde(rename = "extentMajor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub extent_major: Option<Vec<Vec<f64>>>,
     /// The minor extent of the graticule as a two-element array of coordinates.
-    #[serde(rename = "extentMinor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub extent_minor: Option<Vec<Vec<f64>>>,
@@ -975,14 +1130,12 @@ pub struct GraticuleParams {
     ///
     ///
     /// __Default value:__ `[90, 360]`
-    #[serde(rename = "stepMajor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub step_major: Option<Vec<f64>>,
     /// The minor step angles of the graticule.
     ///
     /// __Default value:__ `[10, 10]`
-    #[serde(rename = "stepMinor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub step_minor: Option<Vec<f64>>,
@@ -1015,15 +1168,49 @@ pub struct SequenceParams {
     pub stop: Option<f64>,
 }
 
+/// Generate sphere GeoJSON data for the full globe.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum SphereUnion {
+    Bool(bool),
+    SphereClass(SphereClass),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct SphereClass {}
+
+/// The full data set, included inline. This can be an array of objects or primitive values,
+/// an object, or a string. Arrays of primitive values are ingested as objects with a `data`
+/// property. Strings are parsed according to the specified format type.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum UrlDataInlineDataset {
+    AnythingMap(HashMap<String, Option<serde_json::Value>>),
+    String(String),
+    UnionArray(Vec<serde_json::value::Value>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+#[allow(unused)]
+enum UnusedInlineDataset {
+    AnythingMap(HashMap<String, Option<serde_json::Value>>),
+    Bool(bool),
+    Double(f64),
+    String(String),
+}
 
 /// A key-value mapping between encoding channels and definition of fields.
 ///
 /// A shared key-value mapping between encoding channels and definition of fields in the
 /// underlying layers.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct SpecEncoding {
     /// Rotation angle of point and text marks.
@@ -1081,7 +1268,6 @@ pub struct SpecEncoding {
     /// __Default value:__ If undefined, the default opacity depends on [mark
     /// config](https://vega.github.io/vega-lite/docs/config.html#mark-config)'s `fillOpacity`
     /// property.
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<FillOpacityClass>,
@@ -1187,7 +1373,6 @@ pub struct SpecEncoding {
     /// Stroke dash of the marks.
     ///
     /// __Default value:__ `[1,0]` (No dash).
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<MarkPropDefNumber>,
@@ -1196,7 +1381,6 @@ pub struct SpecEncoding {
     /// __Default value:__ If undefined, the default opacity depends on [mark
     /// config](https://vega.github.io/vega-lite/docs/config.html#mark-config)'s `strokeOpacity`
     /// property.
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<StrokeOpacityClass>,
@@ -1205,7 +1389,6 @@ pub struct SpecEncoding {
     /// __Default value:__ If undefined, the default stroke width depends on [mark
     /// config](https://vega.github.io/vega-lite/docs/config.html#mark-config)'s `strokeWidth`
     /// property.
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<StrokeWidthClass>,
@@ -1226,6 +1409,9 @@ pub struct SpecEncoding {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta2: Option<Theta2Class>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<TimeFieldDef>,
     /// The tooltip text to show upon mouse hover. Specifying `tooltip` encoding overrides [the
     /// `tooltip` property in the mark
     /// definition](https://vega.github.io/vega-lite/docs/mark.html#mark-def).
@@ -1255,17 +1441,14 @@ pub struct SpecEncoding {
     #[builder(default)]
     pub x2: Option<X2Class>,
     /// Error value of x coordinates for error specified `"errorbar"` and `"errorband"`.
-    #[serde(rename = "xError")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_error: Option<XErrorClass>,
     /// Secondary error value of x coordinates for error specified `"errorbar"` and `"errorband"`.
-    #[serde(rename = "xError2")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_error2: Option<XError2Class>,
     /// Offset of x-position of the marks
-    #[serde(rename = "xOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_offset: Option<XOffsetClass>,
@@ -1285,17 +1468,14 @@ pub struct SpecEncoding {
     #[builder(default)]
     pub y2: Option<Y2Class>,
     /// Error value of y coordinates for error specified `"errorbar"` and `"errorband"`.
-    #[serde(rename = "yError")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y_error: Option<YErrorClass>,
     /// Secondary error value of y coordinates for error specified `"errorbar"` and `"errorband"`.
-    #[serde(rename = "yError2")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y_error2: Option<YError2Class>,
     /// Offset of y-position of the marks
-    #[serde(rename = "yOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y_offset: Option<YOffsetClass>,
@@ -1335,7 +1515,9 @@ pub struct SpecEncoding {
 /// property.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct AngleClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -1351,7 +1533,6 @@ pub struct AngleClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -1468,10 +1649,9 @@ pub struct AngleClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -1566,6 +1746,21 @@ pub struct AngleClass {
     pub value: Option<CornerRadiusUnion>,
 }
 
+/// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
+/// `"max"`, `"count"`).
+///
+/// __Default value:__ `undefined` (None)
+///
+/// __See also:__ [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html)
+/// documentation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Aggregate {
+    ArgmDef(ArgmDef),
+    Enum(NonArgAggregateOp),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ArgmDef {
@@ -1575,6 +1770,53 @@ pub struct ArgmDef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub argmin: Option<String>,
+}
+
+/// An [aggregate operation](https://vega.github.io/vega-lite/docs/aggregate.html#ops) to
+/// perform on the field prior to sorting (e.g., `"count"`, `"mean"` and `"median"`). An
+/// aggregation is required when there are multiple values of the sort field for each encoded
+/// data field. The input data objects will be aggregated, grouped by the encoded data
+/// field.
+///
+/// For a full list of operations, please see the documentation for
+/// [aggregate](https://vega.github.io/vega-lite/docs/aggregate.html#ops).
+///
+/// __Default value:__ `"sum"` for stacked plots. Otherwise, `"min"`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NonArgAggregateOp {
+    Average,
+    Ci0,
+    Ci1,
+    Count,
+    Distinct,
+    Exponential,
+    Exponentialb,
+    Max,
+    Mean,
+    Median,
+    Min,
+    Missing,
+    Product,
+    Q1,
+    Q3,
+    Stderr,
+    Stdev,
+    Stdevp,
+    Sum,
+    Valid,
+    Values,
+    Variance,
+    Variancep,
+}
+
+/// An object indicating bin properties, or simply `true` for using default bin parameters.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum AngleBin {
+    BinParams(BinParams),
+    Bool(bool),
 }
 
 /// Binning properties or boolean flag for determining whether to bin data or not.
@@ -1641,6 +1883,15 @@ pub struct BinParams {
     pub steps: Option<Vec<f64>>,
 }
 
+/// A two-element (`[min, max]`) array indicating the range of desired bin values.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum BinExtent {
+    BinExtentClass(BinExtentClass),
+    DoubleArray(Vec<f64>),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct BinExtentClass {
@@ -1662,6 +1913,60 @@ pub struct BinExtentClass {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub encoding: Option<SingleDefUnitChannel>,
+}
+
+/// If a selection parameter is specified, the encoding channel to extract selected values
+/// for when a selection is
+/// [projected](https://vega.github.io/vega-lite/docs/selection.html#project) over multiple
+/// fields or encodings.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SingleDefUnitChannel {
+    Angle,
+    Color,
+    Description,
+    Fill,
+    #[serde(rename = "fillOpacity")]
+    FillOpacity,
+    Href,
+    Key,
+    Latitude,
+    Latitude2,
+    Longitude,
+    Longitude2,
+    Opacity,
+    Radius,
+    Radius2,
+    Shape,
+    Size,
+    Stroke,
+    #[serde(rename = "strokeDash")]
+    StrokeDash,
+    #[serde(rename = "strokeOpacity")]
+    StrokeOpacity,
+    #[serde(rename = "strokeWidth")]
+    StrokeWidth,
+    Text,
+    Theta,
+    Theta2,
+    Time,
+    Url,
+    X,
+    X2,
+    #[serde(rename = "xOffset")]
+    XOffset,
+    Y,
+    Y2,
+    #[serde(rename = "yOffset")]
+    YOffset,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum AngleCondition {
+    ConditionalPredicateValueDefNumberExprRefClass(ConditionalPredicateValueDefNumberExprRefClass),
+    ConditionalValueDefNumberExprRefArray(Vec<ConditionalValueDefNumberExprRef>),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -1688,7 +1993,46 @@ pub struct ConditionalValueDefNumberExprRef {
     pub param: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+/// Predicate for triggering the condition
+///
+/// The `filter` property must be a predication definition, which can take one of the
+/// following forms:
+///
+/// 1) an [expression](https://vega.github.io/vega-lite/docs/types.html#expression) string,
+/// where `datum` can be used to refer to the current data object. For example, `{filter:
+/// "datum.b2 > 60"}` would make the output data includes only items that have values in the
+/// field `b2` over 60.
+///
+/// 2) one of the [field
+/// predicates](https://vega.github.io/vega-lite/docs/predicate.html#field-predicate):
+/// [`equal`](https://vega.github.io/vega-lite/docs/predicate.html#field-equal-predicate),
+/// [`lt`](https://vega.github.io/vega-lite/docs/predicate.html#lt-predicate),
+/// [`lte`](https://vega.github.io/vega-lite/docs/predicate.html#lte-predicate),
+/// [`gt`](https://vega.github.io/vega-lite/docs/predicate.html#gt-predicate),
+/// [`gte`](https://vega.github.io/vega-lite/docs/predicate.html#gte-predicate),
+/// [`range`](https://vega.github.io/vega-lite/docs/predicate.html#range-predicate),
+/// [`oneOf`](https://vega.github.io/vega-lite/docs/predicate.html#one-of-predicate), or
+/// [`valid`](https://vega.github.io/vega-lite/docs/predicate.html#valid-predicate),
+///
+/// 3) a [selection
+/// predicate](https://vega.github.io/vega-lite/docs/predicate.html#selection-predicate),
+/// which define the names of a selection that the data point should belong to (or a logical
+/// composition of selections).
+///
+/// 4) a [logical
+/// composition](https://vega.github.io/vega-lite/docs/predicate.html#composition) of (1),
+/// (2), or (3).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum PredicateCompositionElement {
+    Predicate(Box<Predicate>),
+    String(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Predicate {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1709,10 +2053,9 @@ pub struct Predicate {
     #[builder(default)]
     pub field: Option<String>,
     /// Time unit for the field to be tested.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// An array of inclusive minimum and maximum values for a field value of a data item to be
     /// included in the filtered data.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1720,10 +2063,9 @@ pub struct Predicate {
     pub range: Option<LogicalNotPredicateRange>,
     /// A set of values that the `field`'s value should be a member of, for a data item included
     /// in the filtered data.
-    #[serde(rename = "oneOf")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub one_of: Option<Vec<SelectionInitInterval>>,
+    pub one_of: Option<Vec<UnionWith>>,
     /// The value that the field should be less than.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
@@ -1756,9 +2098,62 @@ pub struct Predicate {
     pub param: Option<String>,
 }
 
+/// Predicate for triggering the condition
+///
+/// The `filter` property must be a predication definition, which can take one of the
+/// following forms:
+///
+/// 1) an [expression](https://vega.github.io/vega-lite/docs/types.html#expression) string,
+/// where `datum` can be used to refer to the current data object. For example, `{filter:
+/// "datum.b2 > 60"}` would make the output data includes only items that have values in the
+/// field `b2` over 60.
+///
+/// 2) one of the [field
+/// predicates](https://vega.github.io/vega-lite/docs/predicate.html#field-predicate):
+/// [`equal`](https://vega.github.io/vega-lite/docs/predicate.html#field-equal-predicate),
+/// [`lt`](https://vega.github.io/vega-lite/docs/predicate.html#lt-predicate),
+/// [`lte`](https://vega.github.io/vega-lite/docs/predicate.html#lte-predicate),
+/// [`gt`](https://vega.github.io/vega-lite/docs/predicate.html#gt-predicate),
+/// [`gte`](https://vega.github.io/vega-lite/docs/predicate.html#gte-predicate),
+/// [`range`](https://vega.github.io/vega-lite/docs/predicate.html#range-predicate),
+/// [`oneOf`](https://vega.github.io/vega-lite/docs/predicate.html#one-of-predicate), or
+/// [`valid`](https://vega.github.io/vega-lite/docs/predicate.html#valid-predicate),
+///
+/// 3) a [selection
+/// predicate](https://vega.github.io/vega-lite/docs/predicate.html#selection-predicate),
+/// which define the names of a selection that the data point should belong to (or a logical
+/// composition of selections).
+///
+/// 4) a [logical
+/// composition](https://vega.github.io/vega-lite/docs/predicate.html#composition) of (1),
+/// (2), or (3).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ConditionalValueDefNumberExprRefPredicateComposition {
+    Predicate(Box<Predicate>),
+    String(String),
+}
+
+/// The value that the field should be equal to.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Equal {
+    Bool(bool),
+    Double(f64),
+    EqualDateTime(EqualDateTime),
+    String(String),
+}
+
 /// Object for defining datetime in Vega-Lite Filter. If both month and quarter are provided,
 /// month has higher precedence. `day` cannot be combined with other date. We accept string
 /// for month and day names.
+///
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct EqualDateTime {
@@ -1816,9 +2211,48 @@ pub struct EqualDateTime {
     pub expr: Option<String>,
 }
 
+/// Value representing the day of a week. This can be one of: (1) integer value -- `1`
+/// represents Monday; (2) case-insensitive day name (e.g., `"Monday"`); (3)
+/// case-insensitive, 3-character short day name (e.g., `"Mon"`).
+///
+/// **Warning:** A DateTime definition object with `day`** should not be combined with
+/// `year`, `quarter`, `month`, or `date`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum DayUnion {
+    Double(f64),
+    String(String),
+}
+
+/// One of: (1) integer value representing the month from `1`-`12`. `1` represents January;
+/// (2) case-insensitive month name (e.g., `"January"`); (3) case-insensitive, 3-character
+/// short month name (e.g., `"Jan"`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Month {
+    Double(f64),
+    String(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Lt {
+    Double(f64),
+    GtDateTime(GtDateTime),
+    String(String),
+}
+
 /// Object for defining datetime in Vega-Lite Filter. If both month and quarter are provided,
 /// month has higher precedence. `day` cannot be combined with other date. We accept string
 /// for month and day names.
+///
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct GtDateTime {
@@ -1874,6 +2308,16 @@ pub struct GtDateTime {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub expr: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum UnionWith {
+    Bool(bool),
+    DateTime(DateTime),
+    Double(f64),
+    String(String),
 }
 
 /// Object for defining datetime in Vega-Lite Filter. If both month and quarter are provided,
@@ -1932,9 +2376,32 @@ pub struct DateTime {
     pub year: Option<f64>,
 }
 
+/// An array of inclusive minimum and maximum values for a field value of a data item to be
+/// included in the filtered data.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum LogicalNotPredicateRange {
+    BackgroundExprRef(BackgroundExprRef),
+    UnionArray(Vec<Option<PurpleRange>>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum PurpleRange {
+    Double(f64),
+    RangeDateTime(RangeDateTime),
+}
+
 /// Object for defining datetime in Vega-Lite Filter. If both month and quarter are provided,
 /// month has higher precedence. `day` cannot be combined with other date. We accept string
 /// for month and day names.
+///
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct RangeDateTime {
@@ -1992,9 +2459,35 @@ pub struct RangeDateTime {
     pub expr: Option<String>,
 }
 
+/// Time unit for the field to be tested.
+///
+/// Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a
+/// temporal field that gets casted as
+/// ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
+///
+/// __Default value:__ `undefined` (None)
+///
+/// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
+/// documentation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum LogicalNotPredicateTimeUnit {
+    Enum(BinnedTimeUnitEnum),
+    TimeUnitParams(TimeUnitParams),
+}
+
+/// Time Unit Params for encoding predicate, which can specified if the data is  already
+/// "binned".
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct TimeUnitParams {
+    /// Whether the data has already been binned to this time unit. If true, Vega-Lite will only
+    /// format the data, marks, and guides, without applying the timeUnit transform to re-bin the
+    /// data again.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub binned: Option<bool>,
     /// If no `unit` is specified, maxbins is used to infer time units.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
@@ -2013,7 +2506,216 @@ pub struct TimeUnitParams {
     pub utc: Option<bool>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+/// Defines how date-time values should be binned.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TimeUnit {
+    Date,
+    Day,
+    Dayhours,
+    Dayhoursminutes,
+    Dayhoursminutesseconds,
+    Dayofyear,
+    Hours,
+    Hoursminutes,
+    Hoursminutesseconds,
+    Milliseconds,
+    Minutes,
+    Minutesseconds,
+    Month,
+    Monthdate,
+    Monthdatehours,
+    Monthdatehoursminutes,
+    Monthdatehoursminutesseconds,
+    Quarter,
+    Quartermonth,
+    Seconds,
+    Secondsmilliseconds,
+    Utcdate,
+    Utcday,
+    Utcdayhours,
+    Utcdayhoursminutes,
+    Utcdayhoursminutesseconds,
+    Utcdayofyear,
+    Utchours,
+    Utchoursminutes,
+    Utchoursminutesseconds,
+    Utcmilliseconds,
+    Utcminutes,
+    Utcminutesseconds,
+    Utcmonth,
+    Utcmonthdate,
+    Utcmonthdatehours,
+    Utcmonthdatehoursminutes,
+    Utcmonthdatehoursminutesseconds,
+    Utcquarter,
+    Utcquartermonth,
+    Utcseconds,
+    Utcsecondsmilliseconds,
+    Utcweek,
+    Utcweekday,
+    Utcweekdayhours,
+    Utcweekdayhoursminutes,
+    Utcweekdayhoursminutesseconds,
+    Utcyear,
+    Utcyeardayofyear,
+    Utcyearmonth,
+    Utcyearmonthdate,
+    Utcyearmonthdatehours,
+    Utcyearmonthdatehoursminutes,
+    Utcyearmonthdatehoursminutesseconds,
+    Utcyearquarter,
+    Utcyearquartermonth,
+    Utcyearweek,
+    Utcyearweekday,
+    Utcyearweekdayhours,
+    Utcyearweekdayhoursminutes,
+    Utcyearweekdayhoursminutesseconds,
+    Week,
+    Weekday,
+    Weekdayhours,
+    Weekdayhoursminutes,
+    Weekdayhoursminutesseconds,
+    Year,
+    Yeardayofyear,
+    Yearmonth,
+    Yearmonthdate,
+    Yearmonthdatehours,
+    Yearmonthdatehoursminutes,
+    Yearmonthdatehoursminutesseconds,
+    Yearquarter,
+    Yearquartermonth,
+    Yearweek,
+    Yearweekday,
+    Yearweekdayhours,
+    Yearweekdayhoursminutes,
+    Yearweekdayhoursminutesseconds,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BinnedTimeUnitEnum {
+    Binnedutcyear,
+    Binnedutcyeardayofyear,
+    Binnedutcyearmonth,
+    Binnedutcyearmonthdate,
+    Binnedutcyearmonthdatehours,
+    Binnedutcyearmonthdatehoursminutes,
+    Binnedutcyearmonthdatehoursminutesseconds,
+    Binnedutcyearquarter,
+    Binnedutcyearquartermonth,
+    Binnedutcyearweek,
+    Binnedutcyearweekday,
+    Binnedutcyearweekdayhours,
+    Binnedutcyearweekdayhoursminutes,
+    Binnedutcyearweekdayhoursminutesseconds,
+    Binnedyear,
+    Binnedyeardayofyear,
+    Binnedyearmonth,
+    Binnedyearmonthdate,
+    Binnedyearmonthdatehours,
+    Binnedyearmonthdatehoursminutes,
+    Binnedyearmonthdatehoursminutesseconds,
+    Binnedyearquarter,
+    Binnedyearquartermonth,
+    Binnedyearweek,
+    Binnedyearweekday,
+    Binnedyearweekdayhours,
+    Binnedyearweekdayhoursminutes,
+    Binnedyearweekdayhoursminutesseconds,
+    Date,
+    Day,
+    Dayhours,
+    Dayhoursminutes,
+    Dayhoursminutesseconds,
+    Dayofyear,
+    Hours,
+    Hoursminutes,
+    Hoursminutesseconds,
+    Milliseconds,
+    Minutes,
+    Minutesseconds,
+    Month,
+    Monthdate,
+    Monthdatehours,
+    Monthdatehoursminutes,
+    Monthdatehoursminutesseconds,
+    Quarter,
+    Quartermonth,
+    Seconds,
+    Secondsmilliseconds,
+    Utcdate,
+    Utcday,
+    Utcdayhours,
+    Utcdayhoursminutes,
+    Utcdayhoursminutesseconds,
+    Utcdayofyear,
+    Utchours,
+    Utchoursminutes,
+    Utchoursminutesseconds,
+    Utcmilliseconds,
+    Utcminutes,
+    Utcminutesseconds,
+    Utcmonth,
+    Utcmonthdate,
+    Utcmonthdatehours,
+    Utcmonthdatehoursminutes,
+    Utcmonthdatehoursminutesseconds,
+    Utcquarter,
+    Utcquartermonth,
+    Utcseconds,
+    Utcsecondsmilliseconds,
+    Utcweek,
+    Utcweekday,
+    Utcweekdayhours,
+    Utcweekdayhoursminutes,
+    Utcweekdayhoursminutesseconds,
+    Utcyear,
+    Utcyeardayofyear,
+    Utcyearmonth,
+    Utcyearmonthdate,
+    Utcyearmonthdatehours,
+    Utcyearmonthdatehoursminutes,
+    Utcyearmonthdatehoursminutesseconds,
+    Utcyearquarter,
+    Utcyearquartermonth,
+    Utcyearweek,
+    Utcyearweekday,
+    Utcyearweekdayhours,
+    Utcyearweekdayhoursminutes,
+    Utcyearweekdayhoursminutesseconds,
+    Week,
+    Weekday,
+    Weekdayhours,
+    Weekdayhoursminutes,
+    Weekdayhoursminutesseconds,
+    Year,
+    Yeardayofyear,
+    Yearmonth,
+    Yearmonthdate,
+    Yearmonthdatehours,
+    Yearmonthdatehoursminutes,
+    Yearmonthdatehoursminutesseconds,
+    Yearquarter,
+    Yearquartermonth,
+    Yearweek,
+    Yearweekday,
+    Yearweekdayhours,
+    Yearweekdayhoursminutes,
+    Yearweekdayhoursminutesseconds,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ConditionalValueDefNumberExprRefValue {
+    BackgroundExprRef(BackgroundExprRef),
+    Double(f64),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ConditionalPredicateValueDefNumberExprRefClass {
     /// Predicate for triggering the condition
@@ -2048,7 +2750,6 @@ pub struct ConditionalPredicateValueDefNumberExprRefClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -2154,10 +2855,9 @@ pub struct ConditionalPredicateValueDefNumberExprRefClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -2246,9 +2946,93 @@ pub struct ConditionalPredicateValueDefNumberExprRefClass {
     pub datum: Option<PrimitiveValue>,
 }
 
+/// The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for
+/// the encoded field or constant value (`datum`). It can also be a `"geojson"` type for
+/// encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
+///
+/// Vega-Lite automatically infers data types in many cases as discussed below. However, type
+/// is required for a field if: (1) the field is not nominal and the field encoding has no
+/// specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort`
+/// order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin`
+/// or `timeUnit`.
+///
+/// __Default value:__
+///
+/// 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has
+/// `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the
+/// following criteria:
+/// - `"quantitative"` is the default type if (1) the encoded field contains `bin` or
+/// `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or
+/// `longitude` channel or (3) if the specified scale type is [a quantitative
+/// scale](https://vega.github.io/vega-lite/docs/scale.html#type).
+/// - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2)
+/// the specified scale type is a time or utc scale
+/// - `"ordinal"` is the default type if (1) the encoded field contains a [custom `sort`
+/// order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2)
+/// the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is
+/// `order`.
+///
+/// 2) For a constant value in data domain (`datum`):
+/// - `"quantitative"` if the datum is a number
+/// - `"nominal"` if the datum is a string
+/// - `"temporal"` if the datum is [a date time
+/// object](https://vega.github.io/vega-lite/docs/datetime.html)
+///
+/// __Note:__
+/// - Data `type` describes the semantics of the data rather than the primitive data types
+/// (number, string, etc.). The same primitive data type can have different types of
+/// measurement. For example, numeric data can represent quantitative, ordinal, or nominal
+/// data.
+/// - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07
+/// 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g.,
+/// `1552199579097`).
+/// - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type`
+/// property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"`
+/// (for using an ordinal bin
+/// scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+/// - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the
+/// `type` property can be either `"temporal"` (default, for using a temporal scale) or
+/// [`"ordinal"` (for using an ordinal
+/// scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+/// - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html),
+/// the `type` property refers to the post-aggregation data type. For example, we can
+/// calculate count `distinct` of a categorical field `"cat"` using `{"aggregate":
+/// "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
+/// - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they
+/// must have exactly the same type as their primary channels (e.g., `x`, `y`).
+///
+/// __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
+///
+/// Data type based on level of measurement
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Type {
+    Geojson,
+    Nominal,
+    Ordinal,
+    Quantitative,
+    Temporal,
+}
+
+/// A constant value in data domain.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum PrimitiveValue {
+    Bool(bool),
+    Double(f64),
+    RepeatRefClass(RepeatRefClass),
+    String(String),
+}
+
 /// Object for defining datetime in Vega-Lite Filter. If both month and quarter are provided,
 /// month has higher precedence. `day` cannot be combined with other date. We accept string
 /// for month and day names.
+///
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 ///
 /// Reference to a repeated value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -2311,6 +3095,40 @@ pub struct RepeatRefClass {
     pub repeat: Option<RepeatEnum>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RepeatEnum {
+    Column,
+    Layer,
+    Repeat,
+    Row,
+}
+
+/// __Required.__ A string defining the name of the field from which to pull a data value or
+/// an object defining iterated values from the
+/// [`repeat`](https://vega.github.io/vega-lite/docs/repeat.html) operator.
+///
+/// __See also:__ [`field`](https://vega.github.io/vega-lite/docs/field.html) documentation.
+///
+/// __Notes:__ 1)  Dots (`.`) and brackets (`[` and `]`) can be used to access nested objects
+/// (e.g., `"field": "foo.bar"` and `"field": "foo['bar']"`). If field names contain dots or
+/// brackets but are not nested, you can use `\\` to escape dots and brackets (e.g.,
+/// `"a\\.b"` and `"a\\[0\\]"`). See more details about escaping in the [field
+/// documentation](https://vega.github.io/vega-lite/docs/field.html). 2) `field` is not
+/// required if `aggregate` is `count`.
+///
+/// The data [field](https://vega.github.io/vega-lite/docs/field.html) to sort by.
+///
+/// __Default value:__ If unspecified, defaults to the field specified in the outer data
+/// reference.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Field {
+    RepeatRef(RepeatRef),
+    String(String),
+}
+
 /// Reference to a repeated value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
@@ -2321,24 +3139,23 @@ pub struct RepeatRef {
 }
 
 /// Properties of a legend or boolean flag for determining whether to show it.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Legend {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "clipHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub clip_height: Option<CornerRadiusUnion>,
-    #[serde(rename = "columnPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub column_padding: Option<CornerRadiusUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub columns: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
@@ -2355,7 +3172,6 @@ pub struct Legend {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub direction: Option<Orientation>,
-    #[serde(rename = "fillColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_color: Option<Box<Color>>,
@@ -2389,43 +3205,33 @@ pub struct Legend {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
-    #[serde(rename = "gradientLength")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_length: Option<FontSize>,
-    #[serde(rename = "gradientOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "gradientStrokeColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_stroke_color: Option<Box<Color>>,
-    #[serde(rename = "gradientStrokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_stroke_width: Option<FontSize>,
-    #[serde(rename = "gradientThickness")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_thickness: Option<FontSize>,
-    #[serde(rename = "gridAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_align: Option<GridAlign>,
-    #[serde(rename = "labelAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_align: Option<TitleAlignUnion>,
-    #[serde(rename = "labelBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_baseline: Option<TextBaseline>,
-    #[serde(rename = "labelColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_color: Option<Box<Color>>,
@@ -2433,55 +3239,42 @@ pub struct Legend {
     ///
     /// __Note:__ The label text and value can be assessed via the `label` and `value` properties
     /// of the legend's backing `datum` object.
-    #[serde(rename = "labelExpr")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_expr: Option<String>,
-    #[serde(rename = "labelFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font: Option<Box<Color>>,
-    #[serde(rename = "labelFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_size: Option<FontSize>,
-    #[serde(rename = "labelFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_style: Option<Box<Color>>,
-    #[serde(rename = "labelFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_weight: Option<FontWeightUnion>,
-    #[serde(rename = "labelLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_offset: Option<FontSize>,
-    #[serde(rename = "labelOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelOverlap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_overlap: Option<LabelOverlapUnion>,
-    #[serde(rename = "labelPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_padding: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelSeparation")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_separation: Option<CornerRadiusUnion>,
-    #[serde(rename = "legendX")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub legend_x: Option<CornerRadiusUnion>,
-    #[serde(rename = "legendY")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub legend_y: Option<CornerRadiusUnion>,
@@ -2499,55 +3292,42 @@ pub struct Legend {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub padding: Option<CornerRadiusUnion>,
-    #[serde(rename = "rowPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub row_padding: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_color: Option<Box<Color>>,
-    #[serde(rename = "symbolDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "symbolDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "symbolFillColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_fill_color: Option<Box<Color>>,
-    #[serde(rename = "symbolLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "symbolOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "symbolOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "symbolSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_size: Option<FontSize>,
-    #[serde(rename = "symbolStrokeColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_stroke_color: Option<Box<Color>>,
-    #[serde(rename = "symbolStrokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_stroke_width: Option<FontSize>,
-    #[serde(rename = "symbolType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_type: Option<Box<Color>>,
-    #[serde(rename = "tickCount")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_count: Option<TickCount>,
@@ -2557,7 +3337,6 @@ pub struct Legend {
     /// enforce the minimum step value.
     ///
     /// __Default value__: `undefined`
-    #[serde(rename = "tickMinStep")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_min_step: Option<CornerRadiusUnion>,
@@ -2583,55 +3362,42 @@ pub struct Legend {
     #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
     #[builder(default)]
     pub title: RemovableValue<LegendText>,
-    #[serde(rename = "titleAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_align: Option<TitleAlignUnion>,
-    #[serde(rename = "titleAnchor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_anchor: Option<TitleAnchorUnion>,
-    #[serde(rename = "titleBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_baseline: Option<TextBaseline>,
-    #[serde(rename = "titleColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_color: Option<Box<Color>>,
-    #[serde(rename = "titleFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font: Option<Box<Color>>,
-    #[serde(rename = "titleFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_size: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_style: Option<Box<Color>>,
-    #[serde(rename = "titleFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_weight: Option<FontWeightUnion>,
-    #[serde(rename = "titleLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_limit: Option<FontSize>,
-    #[serde(rename = "titleLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_line_height: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleOrient")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_orient: Option<TitleOrientUnion>,
-    #[serde(rename = "titlePadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_padding: Option<CornerRadiusUnion>,
@@ -2655,6 +3421,312 @@ pub struct Legend {
     pub zindex: Option<f64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Aria {
+    BackgroundExprRef(BackgroundExprRef),
+    Bool(bool),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum CornerRadiusUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Double(f64),
+}
+
+/// The orientation of a non-stacked bar, tick, area, and line charts. The value is either
+/// horizontal (default) or vertical.
+/// - For bar, rule and tick, this determines whether the size of the bar and tick should be
+/// applied to x or y dimension.
+/// - For area, this property determines the orient property of the Vega output.
+/// - For line and trail marks, this property determines the sort order of the points in the
+/// line if `config.sortLineBy` is not specified. For stacked charts, this is always
+/// determined by the orientation of the stack; therefore explicitly specified value will be
+/// ignored.
+///
+/// The direction of the legend, one of `"vertical"` or `"horizontal"`.
+///
+/// __Default value:__
+/// - For top-/bottom-`orient`ed legends, `"horizontal"`
+/// - For left-/right-`orient`ed legends, `"vertical"`
+/// - For top/bottom-left/right-`orient`ed legends, `"horizontal"` for gradient legends and
+/// `"vertical"` for symbol legends.
+///
+/// The default direction (`"horizontal"` or `"vertical"`) for gradient legends.
+///
+/// __Default value:__ `"vertical"`.
+///
+/// The default direction (`"horizontal"` or `"vertical"`) for symbol legends.
+///
+/// __Default value:__ `"vertical"`.
+///
+/// Orientation of the box plot. This is normally automatically determined based on types of
+/// fields on x and y channels. However, an explicit `orient` be specified when the
+/// orientation is ambiguous.
+///
+/// __Default value:__ `"vertical"`.
+///
+/// Orientation of the error bar. This is normally automatically determined, but can be
+/// specified when the orientation is ambiguous and cannot be automatically determined.
+///
+/// Orientation of the error band. This is normally automatically determined, but can be
+/// specified when the orientation is ambiguous and cannot be automatically determined.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Orientation {
+    Horizontal,
+    Vertical,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Format {
+    AnythingMap(HashMap<String, Option<serde_json::Value>>),
+    String(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum FontSize {
+    BackgroundExprRef(BackgroundExprRef),
+    Double(f64),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum GridAlign {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(LayoutAlign),
+}
+
+/// The horizontal alignment of the text or ranged marks (area, bar, image, rect, rule). One
+/// of `"left"`, `"right"`, `"center"`.
+///
+/// __Note:__ Expression reference is *not* supported for range marks.
+///
+/// Horizontal text alignment of header labels. One of `"left"`, `"center"`, or `"right"`.
+///
+/// Horizontal text alignment (to the anchor) of header titles.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TitleAlignUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(Align),
+}
+
+/// Horizontal text alignment of axis tick labels, overriding the default setting for the
+/// current axis orientation.
+///
+/// Horizontal text alignment of axis titles.
+///
+/// The alignment of the legend label, can be left, center, or right.
+///
+/// Horizontal text alignment for legend titles.
+///
+/// __Default value:__ `"left"`.
+///
+/// Horizontal text alignment for title text. One of `"left"`, `"center"`, or `"right"`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Align {
+    Center,
+    Left,
+    Right,
+}
+
+/// For text marks, the vertical text baseline. One of `"alphabetic"` (default), `"top"`,
+/// `"middle"`, `"bottom"`, `"line-top"`, `"line-bottom"`, or an expression reference that
+/// provides one of the valid values. The `"line-top"` and `"line-bottom"` values operate
+/// similarly to `"top"` and `"bottom"`, but are calculated relative to the `lineHeight`
+/// rather than `fontSize` alone.
+///
+/// For range marks, the vertical alignment of the marks. One of `"top"`, `"middle"`,
+/// `"bottom"`.
+///
+/// __Note:__ Expression reference is *not* supported for range marks.
+///
+/// The vertical text baseline for the header labels. One of `"alphabetic"` (default),
+/// `"top"`, `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and
+/// `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated
+/// relative to the `titleLineHeight` rather than `titleFontSize` alone.
+///
+/// The vertical text baseline for the header title. One of `"alphabetic"` (default),
+/// `"top"`, `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and
+/// `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated
+/// relative to the `titleLineHeight` rather than `titleFontSize` alone.
+///
+/// __Default value:__ `"middle"`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TextBaseline {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(Baseline),
+}
+
+/// Vertical text baseline of axis tick labels, overriding the default setting for the
+/// current axis orientation. One of `"alphabetic"` (default), `"top"`, `"middle"`,
+/// `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and `"line-bottom"` values
+/// operate similarly to `"top"` and `"bottom"`, but are calculated relative to the
+/// *lineHeight* rather than *fontSize* alone.
+///
+/// Vertical text baseline for axis titles. One of `"alphabetic"` (default), `"top"`,
+/// `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and
+/// `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated
+/// relative to the *lineHeight* rather than *fontSize* alone.
+///
+/// The position of the baseline of legend label, can be `"top"`, `"middle"`, `"bottom"`, or
+/// `"alphabetic"`.
+///
+/// __Default value:__ `"middle"`.
+///
+/// Vertical text baseline for legend titles.  One of `"alphabetic"` (default), `"top"`,
+/// `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and
+/// `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated
+/// relative to the *lineHeight* rather than *fontSize* alone.
+///
+/// __Default value:__ `"top"`.
+///
+/// Vertical text baseline for title and subtitle text. One of `"alphabetic"` (default),
+/// `"top"`, `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and
+/// `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated
+/// relative to the *lineHeight* rather than *fontSize* alone.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Baseline {
+    Alphabetic,
+    Bottom,
+    #[serde(rename = "line-bottom")]
+    LineBottom,
+    #[serde(rename = "line-top")]
+    LineTop,
+    Middle,
+    Top,
+}
+
+/// The font weight of the header label.
+///
+/// Font weight of the header title. This can be either a string (e.g `"bold"`, `"normal"`)
+/// or a number (`100`, `200`, `300`, ..., `900` where `"normal"` = `400` and `"bold"` =
+/// `700`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum FontWeightUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Double(f64),
+    Enum(FontWeightEnum),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FontWeightEnum {
+    Bold,
+    Bolder,
+    Lighter,
+    Normal,
+}
+
+/// The strategy to use for resolving overlap of axis labels. If `false` (the default), no
+/// overlap reduction is attempted. If set to `true` or `"parity"`, a strategy of removing
+/// every other label is used (this works well for standard linear axes). If set to
+/// `"greedy"`, a linear scan of the labels is performed, removing any labels that overlaps
+/// with the last visible label (this often works better for log-scaled axes).
+///
+/// __Default value:__ `true` for non-nominal fields with non-log scales; `"greedy"` for log
+/// scales; otherwise `false`.
+///
+/// The strategy to use for resolving overlap of labels in gradient legends. If `false`, no
+/// overlap reduction is attempted. If set to `true` or `"parity"`, a strategy of removing
+/// every other label is used. If set to `"greedy"`, a linear scan of the labels is
+/// performed, removing any label that overlaps with the last visible label (this often works
+/// better for log-scaled axes).
+///
+/// __Default value:__ `"greedy"` for `log scales otherwise `true`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum LabelOverlapUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Bool(bool),
+    Enum(LabelOverlapEnum),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LabelOverlapEnum {
+    Greedy,
+    Parity,
+}
+
+/// The type of the legend. Use `"symbol"` to create a discrete legend and `"gradient"` for a
+/// continuous color gradient.
+///
+/// __Default value:__ `"gradient"` for non-binned quantitative fields and temporal fields;
+/// `"symbol"` otherwise.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LegendType {
+    Gradient,
+    Symbol,
+}
+
+/// The orientation of the legend, which determines how the legend is positioned within the
+/// scene. One of `"left"`, `"right"`, `"top"`, `"bottom"`, `"top-left"`, `"top-right"`,
+/// `"bottom-left"`, `"bottom-right"`, `"none"`.
+///
+/// __Default value:__ `"right"`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum LegendOrient {
+    Bottom,
+    #[serde(rename = "bottom-left")]
+    BottomLeft,
+    #[serde(rename = "bottom-right")]
+    BottomRight,
+    Left,
+    None,
+    Right,
+    Top,
+    #[serde(rename = "top-left")]
+    TopLeft,
+    #[serde(rename = "top-right")]
+    TopRight,
+}
+
+/// The projection’s translation offset as a two-element array `[tx, ty]`.
+///
+/// A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient
+/// definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values
+/// between `0` to `1` for opacity).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum StrokeDashUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    DoubleArray(Vec<f64>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TickCount {
+    Double(f64),
+    Enum(TimeInterval),
+    TickCountTimeIntervalStep(TickCountTimeIntervalStep),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct TickCountTimeIntervalStep {
@@ -2670,7 +3742,118 @@ pub struct TickCountTimeIntervalStep {
     pub expr: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TimeInterval {
+    Day,
+    Hour,
+    Millisecond,
+    Minute,
+    Month,
+    Second,
+    Week,
+    Year,
+}
+
+/// A string or array of strings indicating the name of custom styles to apply to the mark. A
+/// style is a named collection of mark property defaults defined within the [style
+/// configuration](https://vega.github.io/vega-lite/docs/mark.html#style-config). If style is
+/// an array, later styles will override earlier styles. Any [mark
+/// properties](https://vega.github.io/vega-lite/docs/encoding.html#mark-prop) explicitly
+/// defined within the `encoding` will override a style default.
+///
+/// __Default value:__ The mark's name. For example, a bar mark will have style `"bar"` by
+/// default. __Note:__ Any specified style will augment the default style. For example, a bar
+/// mark with `"style": "foo"` will receive from `config.style.bar` and `config.style.foo`
+/// (the specified style `"foo"` has higher precedence).
+///
+/// A string or array of strings indicating the name of custom styles to apply to the axis. A
+/// style is a named collection of axis property defined within the [style
+/// configuration](https://vega.github.io/vega-lite/docs/mark.html#style-config). If style is
+/// an array, later styles will override earlier styles.
+///
+/// __Default value:__ (none) __Note:__ Any specified style will augment the default style.
+/// For example, an x-axis mark with `"style": "foo"` will use `config.axisX` and
+/// `config.style.foo` (the specified style `"foo"` has higher precedence).
+///
+/// A [mark style property](https://vega.github.io/vega-lite/docs/config.html#style) to apply
+/// to the title text mark.
+///
+/// __Default value:__ `"group-title"`.
+///
+/// Placeholder text if the `text` channel is not specified
+///
+/// The subtitle Text.
+///
+/// A string or array of strings indicating the name of custom styles to apply to the view
+/// background. A style is a named collection of mark property defaults defined within the
+/// [style configuration](https://vega.github.io/vega-lite/docs/mark.html#style-config). If
+/// style is an array, later styles will override earlier styles.
+///
+/// __Default value:__ `"cell"` __Note:__ Any specified view background properties will
+/// augment the default style.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum LegendText {
+    String(String),
+    StringArray(Vec<String>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TitleAnchorUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(TitleAnchorEnum),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TitleAnchorEnum {
+    End,
+    Middle,
+    Start,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TitleOrientUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(Orient),
+}
+
+/// The orientation of the header label. One of `"top"`, `"bottom"`, `"left"` or `"right"`.
+///
+/// Shortcut for setting both labelOrient and titleOrient.
+///
+/// The orientation of the header title. One of `"top"`, `"bottom"`, `"left"` or `"right"`.
+///
+/// Orientation of the legend title.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Orient {
+    Bottom,
+    Left,
+    Right,
+    Top,
+}
+
+/// Explicitly set the visible axis tick values.
+///
+/// Explicitly set the visible legend values.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Values {
+    BackgroundExprRef(BackgroundExprRef),
+    UnionArray(Vec<UnionWith>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Scale {
     /// The alignment of the steps within the scale range.
@@ -2750,7 +3933,6 @@ pub struct Scale {
     pub domain: Option<DomainUnion>,
     /// Sets the maximum value in the scale domain, overriding the `domain` property. This
     /// property is only intended for use with scales having continuous domains.
-    #[serde(rename = "domainMax")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_max: Option<DomainM>,
@@ -2759,16 +3941,21 @@ pub struct Scale {
     /// midpoint for [diverging color
     /// scales](https://vega.github.io/vega-lite/docs/scale.html#piecewise). The domainMid
     /// property is only intended for use with scales supporting continuous, piecewise domains.
-    #[serde(rename = "domainMid")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_mid: Option<CornerRadiusUnion>,
     /// Sets the minimum value in the scale domain, overriding the domain property. This property
     /// is only intended for use with scales having continuous domains.
-    #[serde(rename = "domainMin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_min: Option<DomainM>,
+    /// An expression for an array of raw values that, if non-null, directly overrides the
+    /// _domain_ property. This is useful for supporting interactions such as panning or zooming
+    /// a scale. The scale may be initially determined using a data-driven domain, then modified
+    /// in response to user input by setting the rawDomain value.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub domain_raw: Option<BackgroundExprRef>,
     /// The exponent of the `pow` scale.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
@@ -2836,7 +4023,6 @@ pub struct Scale {
     ///
     /// __Default value:__ derived from the [scale
     /// config](https://vega.github.io/vega-lite/docs/scale.html#config)'s `bandPaddingInner`.
-    #[serde(rename = "paddingInner")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub padding_inner: Option<CornerRadiusUnion>,
@@ -2847,7 +4033,6 @@ pub struct Scale {
     /// config](https://vega.github.io/vega-lite/docs/scale.html#config)'s `bandPaddingOuter` for
     /// band scales and `pointPadding` for point scales. By default, Vega-Lite sets outer padding
     /// such that _width/height = number of unique values * step_.
-    #[serde(rename = "paddingOuter")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub padding_outer: Option<CornerRadiusUnion>,
@@ -2881,13 +4066,11 @@ pub struct Scale {
     pub range: Option<ScaleRange>,
     /// Sets the maximum value in the scale range, overriding the `range` property or the default
     /// range. This property is only intended for use with scales having continuous ranges.
-    #[serde(rename = "rangeMax")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub range_max: Option<RangeM>,
     /// Sets the minimum value in the scale range, overriding the `range` property or the default
     /// range. This property is only intended for use with scales having continuous ranges.
-    #[serde(rename = "rangeMin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub range_min: Option<RangeM>,
@@ -2912,11 +4095,14 @@ pub struct Scale {
     /// [discretizing](https://vega.github.io/vega-lite/docs/scale.html#discretizing) scales.
     /// Continuous color schemes are intended for use with color scales.
     ///
+    /// To set a custom scheme, instead set the list of values [as the scale
+    /// range](https://vega.github.io/vega-lite/docs/scale.html#2-setting-the-range-property-to-an-array-of-valid-css-color-strings).
+    ///
     /// For the full list of supported schemes, please refer to the [Vega
     /// Scheme](https://vega.github.io/vega/docs/schemes/#reference) reference.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub scheme: Option<Scheme>,
+    pub scheme: Option<SchemeUnion>,
     /// The type of scale. Vega-Lite supports the following categories of scale types:
     ///
     /// 1) [**Continuous Scales**](https://vega.github.io/vega-lite/docs/scale.html#continuous)
@@ -2960,6 +4146,24 @@ pub struct Scale {
     pub zero: Option<Aria>,
 }
 
+/// Bin boundaries can be provided to scales as either an explicit array of bin boundaries or
+/// as a bin specification object. The legal values are:
+/// - An [array](../types/#Array) literal of bin boundary values. For example, `[0, 5, 10,
+/// 15, 20]`. The array must include both starting and ending boundaries. The previous
+/// example uses five values to indicate a total of four bin intervals: [0-5), [5-10),
+/// [10-15), [15-20]. Array literals may include signal references as elements.
+/// - A [bin specification object](https://vega.github.io/vega-lite/docs/scale.html#bins)
+/// that indicates the bin _step_ size, and optionally the _start_ and _stop_ boundaries.
+/// - An array of bin boundaries over the scale domain. If provided, axes and legends will
+/// use the bin boundaries to inform the choice of tick marks and text labels.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleBins {
+    DoubleArray(Vec<f64>),
+    ScaleBinParams(ScaleBinParams),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ScaleBinParams {
@@ -2981,9 +4185,62 @@ pub struct ScaleBinParams {
     pub stop: Option<f64>,
 }
 
+/// Customized domain values in the form of constant values or dynamic values driven by a
+/// parameter.
+///
+/// 1) Constant `domain` for _quantitative_ fields can take one of the following forms:
+///
+/// - A two-element array with minimum and maximum values. To create a diverging scale, this
+/// two-element array can be combined with the `domainMid` property.
+/// - An array with more than two entries, for [Piecewise quantitative
+/// scales](https://vega.github.io/vega-lite/docs/scale.html#piecewise).
+/// - A string value `"unaggregated"`, if the input field is aggregated, to indicate that the
+/// domain should include the raw data values prior to the aggregation.
+///
+/// 2) Constant `domain` for _temporal_ fields can be a two-element array with minimum and
+/// maximum values, in the form of either timestamps or the [DateTime definition
+/// objects](https://vega.github.io/vega-lite/docs/types.html#datetime).
+///
+/// 3) Constant `domain` for _ordinal_ and _nominal_ fields can be an array that lists valid
+/// input values.
+///
+/// 4) To combine (union) specified constant domain with the field's values, `domain` can be
+/// an object with a `unionWith` property that specify constant domain to be combined. For
+/// example, `domain: {unionWith: [0, 100]}` for a quantitative scale means that the scale
+/// domain always includes `[0, 100]`, but will include other values in the fields beyond
+/// `[0, 100]`.
+///
+/// 5) Domain can also takes an object defining a field or encoding of a parameter that
+/// [interactively
+/// determines](https://vega.github.io/vega-lite/docs/selection.html#scale-domains) the scale
+/// domain.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum DomainUnion {
+    DomainUnionWith(DomainUnionWith),
+    Enum(DomainEnum),
+    UnionArray(Vec<Option<DomainElement>>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum DomainElement {
+    Bool(bool),
+    DomainDateTime(DomainDateTime),
+    Double(f64),
+    String(String),
+}
+
 /// Object for defining datetime in Vega-Lite Filter. If both month and quarter are provided,
 /// month has higher precedence. `day` cannot be combined with other date. We accept string
 /// for month and day names.
+///
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct DomainDateTime {
@@ -3041,7 +4298,13 @@ pub struct DomainDateTime {
     pub expr: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct DomainUnionWith {
     /// If a selection parameter is specified, the field name to extract selected values for when
@@ -3064,19 +4327,37 @@ pub struct DomainUnionWith {
     pub encoding: Option<SingleDefUnitChannel>,
     /// Customized domain values to be union with the field's values or explicitly defined
     /// domain. Should be an array of valid scale domain values.
-    #[serde(rename = "unionWith")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub union_with: Option<Vec<SelectionInitInterval>>,
+    pub union_with: Option<Vec<UnionWith>>,
     /// Vega expression (which can refer to Vega-Lite parameters).
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub expr: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DomainEnum {
+    Unaggregated,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum DomainM {
+    DomainMaxDateTime(DomainMaxDateTime),
+    Double(f64),
+}
+
 /// Object for defining datetime in Vega-Lite Filter. If both month and quarter are provided,
 /// month has higher precedence. `day` cannot be combined with other date. We accept string
 /// for month and day names.
+///
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct DomainMaxDateTime {
@@ -3134,6 +4415,28 @@ pub struct DomainMaxDateTime {
     pub expr: Option<String>,
 }
 
+/// The interpolation method for range values. By default, a general interpolator for
+/// numbers, dates, strings and colors (in HCL space) is used. For color ranges, this
+/// property allows interpolation in alternative color spaces. Legal values include `rgb`,
+/// `hsl`, `hsl-long`, `lab`, `hcl`, `hcl-long`, `cubehelix` and `cubehelix-long` ('-long'
+/// variants use longer paths in polar coordinate spaces). If object-valued, this property
+/// accepts an object with a string-valued _type_ property and an optional numeric _gamma_
+/// property applicable to rgb and cubehelix interpolators. For more, see the [d3-interpolate
+/// documentation](https://github.com/d3/d3-interpolate).
+///
+/// * __Default value:__ `hcl`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInterpolate {
+    Enum(ScaleInterpolateEnum),
+    ScaleInterpolateParamsClass(ScaleInterpolateParamsClass),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ScaleInterpolateParamsClass {
@@ -3147,9 +4450,68 @@ pub struct ScaleInterpolateParamsClass {
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub expr_ref_type: Option<ExprRefType>,
+    pub expr_ref_type: Option<ScaleInterpolateParamsType>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ScaleInterpolateParamsType {
+    Cubehelix,
+    #[serde(rename = "cubehelix-long")]
+    CubehelixLong,
+    Rgb,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ScaleInterpolateEnum {
+    Cubehelix,
+    #[serde(rename = "cubehelix-long")]
+    CubehelixLong,
+    Hcl,
+    #[serde(rename = "hcl-long")]
+    HclLong,
+    Hsl,
+    #[serde(rename = "hsl-long")]
+    HslLong,
+    Lab,
+    Rgb,
+}
+
+/// Extending the domain so that it starts and ends on nice round values. This method
+/// typically modifies the scale’s domain, and may only extend the bounds to the nearest
+/// round value. Nicing is useful if the domain is computed from data and may be irregular.
+/// For example, for a domain of _[0.201479…, 0.996679…]_, a nice domain might be _[0.2,
+/// 1.0]_.
+///
+/// For quantitative scales such as linear, `nice` can be either a boolean flag or a number.
+/// If `nice` is a number, it will represent a desired tick count. This allows greater
+/// control over the step size used to extend the bounds, guaranteeing that the returned
+/// ticks will exactly cover the domain.
+///
+/// For temporal fields with time and utc scales, the `nice` value can be a string indicating
+/// the desired time interval. Legal values are `"millisecond"`, `"second"`, `"minute"`,
+/// `"hour"`, `"day"`, `"week"`, `"month"`, and `"year"`. Alternatively, `time` and `utc`
+/// scales can accept an object-valued interval specifier of the form `{"interval": "month",
+/// "step": 3}`, which includes a desired number of interval steps. Here, the domain would
+/// snap to quarter (Jan, Apr, Jul, Oct) boundaries.
+///
+/// __Default value:__ `true` for unbinned _quantitative_ fields without explicit domain
+/// bounds; `false` otherwise.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Nice {
+    Bool(bool),
+    Double(f64),
+    Enum(TimeInterval),
+    NiceTimeIntervalStep(NiceTimeIntervalStep),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct NiceTimeIntervalStep {
@@ -3165,6 +4527,50 @@ pub struct NiceTimeIntervalStep {
     pub expr: Option<String>,
 }
 
+/// The range of the scale. One of:
+///
+/// - A string indicating a [pre-defined named scale
+/// range](https://vega.github.io/vega-lite/docs/scale.html#range-config) (e.g., example,
+/// `"symbol"`, or `"diverging"`).
+///
+/// - For [continuous scales](https://vega.github.io/vega-lite/docs/scale.html#continuous),
+/// two-element array indicating  minimum and maximum values, or an array with more than two
+/// entries for specifying a [piecewise
+/// scale](https://vega.github.io/vega-lite/docs/scale.html#piecewise).
+///
+/// - For [discrete](https://vega.github.io/vega-lite/docs/scale.html#discrete) and
+/// [discretizing](https://vega.github.io/vega-lite/docs/scale.html#discretizing) scales, an
+/// array of desired output values or an object with a `field` property representing the
+/// range values.  For example, if a field `color` contains CSS color names, we can set
+/// `range` to `{field: "color"}`.
+///
+/// __Notes:__
+///
+/// 1) For color scales you can also specify a color
+/// [`scheme`](https://vega.github.io/vega-lite/docs/scale.html#scheme) instead of `range`.
+///
+/// 2) Any directly specified `range` for `x` and `y` channels will be ignored. Range can be
+/// customized via the view's corresponding
+/// [size](https://vega.github.io/vega-lite/docs/size.html) (`width` and `height`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleRange {
+    Enum(RangeEnum),
+    FieldRange(FieldRange),
+    UnionArray(Vec<FluffyRange>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum FluffyRange {
+    BackgroundExprRef(BackgroundExprRef),
+    Double(f64),
+    DoubleArray(Vec<f64>),
+    String(String),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct FieldRange {
@@ -3173,6 +4579,105 @@ pub struct FieldRange {
     pub field: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RangeEnum {
+    Category,
+    Diverging,
+    Heatmap,
+    Height,
+    Ordinal,
+    Ramp,
+    Symbol,
+    Width,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum RangeM {
+    BackgroundExprRef(BackgroundExprRef),
+    Double(f64),
+    String(String),
+}
+
+/// The type of scale. Vega-Lite supports the following categories of scale types:
+///
+/// 1) [**Continuous Scales**](https://vega.github.io/vega-lite/docs/scale.html#continuous)
+/// -- mapping continuous domains to continuous output ranges
+/// ([`"linear"`](https://vega.github.io/vega-lite/docs/scale.html#linear),
+/// [`"pow"`](https://vega.github.io/vega-lite/docs/scale.html#pow),
+/// [`"sqrt"`](https://vega.github.io/vega-lite/docs/scale.html#sqrt),
+/// [`"symlog"`](https://vega.github.io/vega-lite/docs/scale.html#symlog),
+/// [`"log"`](https://vega.github.io/vega-lite/docs/scale.html#log),
+/// [`"time"`](https://vega.github.io/vega-lite/docs/scale.html#time),
+/// [`"utc"`](https://vega.github.io/vega-lite/docs/scale.html#utc).
+///
+/// 2) [**Discrete Scales**](https://vega.github.io/vega-lite/docs/scale.html#discrete) --
+/// mapping discrete domains to discrete
+/// ([`"ordinal"`](https://vega.github.io/vega-lite/docs/scale.html#ordinal)) or continuous
+/// ([`"band"`](https://vega.github.io/vega-lite/docs/scale.html#band) and
+/// [`"point"`](https://vega.github.io/vega-lite/docs/scale.html#point)) output ranges.
+///
+/// 3) [**Discretizing
+/// Scales**](https://vega.github.io/vega-lite/docs/scale.html#discretizing) -- mapping
+/// continuous domains to discrete output ranges
+/// [`"bin-ordinal"`](https://vega.github.io/vega-lite/docs/scale.html#bin-ordinal),
+/// [`"quantile"`](https://vega.github.io/vega-lite/docs/scale.html#quantile),
+/// [`"quantize"`](https://vega.github.io/vega-lite/docs/scale.html#quantize) and
+/// [`"threshold"`](https://vega.github.io/vega-lite/docs/scale.html#threshold).
+///
+/// __Default value:__ please see the [scale type
+/// table](https://vega.github.io/vega-lite/docs/scale.html#type).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ScaleType {
+    Band,
+    #[serde(rename = "bin-ordinal")]
+    BinOrdinal,
+    Identity,
+    Linear,
+    Log,
+    Ordinal,
+    Point,
+    Pow,
+    Quantile,
+    Quantize,
+    Sequential,
+    Sqrt,
+    Symlog,
+    Threshold,
+    Time,
+    Utc,
+}
+
+/// A string indicating a color
+/// [scheme](https://vega.github.io/vega-lite/docs/scale.html#scheme) name (e.g.,
+/// `"category10"` or `"blues"`) or a [scheme parameter
+/// object](https://vega.github.io/vega-lite/docs/scale.html#scheme-params).
+///
+/// Discrete color schemes may be used with
+/// [discrete](https://vega.github.io/vega-lite/docs/scale.html#discrete) or
+/// [discretizing](https://vega.github.io/vega-lite/docs/scale.html#discretizing) scales.
+/// Continuous color schemes are intended for use with color scales.
+///
+/// To set a custom scheme, instead set the list of values [as the scale
+/// range](https://vega.github.io/vega-lite/docs/scale.html#2-setting-the-range-property-to-an-array-of-valid-css-color-strings).
+///
+/// For the full list of supported schemes, please refer to the [Vega
+/// Scheme](https://vega.github.io/vega/docs/schemes/#reference) reference.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum SchemeUnion {
+    Enum(ColorScheme),
+    SchemeParams(SchemeParams),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct SchemeParams {
@@ -3193,11 +4698,658 @@ pub struct SchemeParams {
     /// Scheme](https://vega.github.io/vega/docs/schemes/#reference) reference.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub name: Option<String>,
+    pub name: Option<ColorScheme>,
     /// Vega expression (which can refer to Vega-Lite parameters).
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub expr: Option<String>,
+}
+
+/// A color scheme name for ordinal scales (e.g., `"category10"` or `"blues"`).
+///
+/// For the full list of supported schemes, please refer to the [Vega
+/// Scheme](https://vega.github.io/vega/docs/schemes/#reference) reference.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ColorScheme {
+    Accent,
+    Bluegreen,
+    #[serde(rename = "bluegreen-3")]
+    Bluegreen3,
+    #[serde(rename = "bluegreen-4")]
+    Bluegreen4,
+    #[serde(rename = "bluegreen-5")]
+    Bluegreen5,
+    #[serde(rename = "bluegreen-6")]
+    Bluegreen6,
+    #[serde(rename = "bluegreen-7")]
+    Bluegreen7,
+    #[serde(rename = "bluegreen-8")]
+    Bluegreen8,
+    #[serde(rename = "bluegreen-9")]
+    Bluegreen9,
+    Blueorange,
+    #[serde(rename = "blueorange-10")]
+    Blueorange10,
+    #[serde(rename = "blueorange-11")]
+    Blueorange11,
+    #[serde(rename = "blueorange-3")]
+    Blueorange3,
+    #[serde(rename = "blueorange-4")]
+    Blueorange4,
+    #[serde(rename = "blueorange-5")]
+    Blueorange5,
+    #[serde(rename = "blueorange-6")]
+    Blueorange6,
+    #[serde(rename = "blueorange-7")]
+    Blueorange7,
+    #[serde(rename = "blueorange-8")]
+    Blueorange8,
+    #[serde(rename = "blueorange-9")]
+    Blueorange9,
+    Bluepurple,
+    #[serde(rename = "bluepurple-3")]
+    Bluepurple3,
+    #[serde(rename = "bluepurple-4")]
+    Bluepurple4,
+    #[serde(rename = "bluepurple-5")]
+    Bluepurple5,
+    #[serde(rename = "bluepurple-6")]
+    Bluepurple6,
+    #[serde(rename = "bluepurple-7")]
+    Bluepurple7,
+    #[serde(rename = "bluepurple-8")]
+    Bluepurple8,
+    #[serde(rename = "bluepurple-9")]
+    Bluepurple9,
+    Blues,
+    Brownbluegreen,
+    #[serde(rename = "brownbluegreen-10")]
+    Brownbluegreen10,
+    #[serde(rename = "brownbluegreen-11")]
+    Brownbluegreen11,
+    #[serde(rename = "brownbluegreen-3")]
+    Brownbluegreen3,
+    #[serde(rename = "brownbluegreen-4")]
+    Brownbluegreen4,
+    #[serde(rename = "brownbluegreen-5")]
+    Brownbluegreen5,
+    #[serde(rename = "brownbluegreen-6")]
+    Brownbluegreen6,
+    #[serde(rename = "brownbluegreen-7")]
+    Brownbluegreen7,
+    #[serde(rename = "brownbluegreen-8")]
+    Brownbluegreen8,
+    #[serde(rename = "brownbluegreen-9")]
+    Brownbluegreen9,
+    Browns,
+    Category10,
+    Category20,
+    Category20B,
+    Category20C,
+    Cividis,
+    Dark2,
+    Darkblue,
+    #[serde(rename = "darkblue-3")]
+    Darkblue3,
+    #[serde(rename = "darkblue-4")]
+    Darkblue4,
+    #[serde(rename = "darkblue-5")]
+    Darkblue5,
+    #[serde(rename = "darkblue-6")]
+    Darkblue6,
+    #[serde(rename = "darkblue-7")]
+    Darkblue7,
+    #[serde(rename = "darkblue-8")]
+    Darkblue8,
+    #[serde(rename = "darkblue-9")]
+    Darkblue9,
+    Darkgold,
+    #[serde(rename = "darkgold-3")]
+    Darkgold3,
+    #[serde(rename = "darkgold-4")]
+    Darkgold4,
+    #[serde(rename = "darkgold-5")]
+    Darkgold5,
+    #[serde(rename = "darkgold-6")]
+    Darkgold6,
+    #[serde(rename = "darkgold-7")]
+    Darkgold7,
+    #[serde(rename = "darkgold-8")]
+    Darkgold8,
+    #[serde(rename = "darkgold-9")]
+    Darkgold9,
+    Darkgreen,
+    #[serde(rename = "darkgreen-3")]
+    Darkgreen3,
+    #[serde(rename = "darkgreen-4")]
+    Darkgreen4,
+    #[serde(rename = "darkgreen-5")]
+    Darkgreen5,
+    #[serde(rename = "darkgreen-6")]
+    Darkgreen6,
+    #[serde(rename = "darkgreen-7")]
+    Darkgreen7,
+    #[serde(rename = "darkgreen-8")]
+    Darkgreen8,
+    #[serde(rename = "darkgreen-9")]
+    Darkgreen9,
+    Darkmulti,
+    #[serde(rename = "darkmulti-3")]
+    Darkmulti3,
+    #[serde(rename = "darkmulti-4")]
+    Darkmulti4,
+    #[serde(rename = "darkmulti-5")]
+    Darkmulti5,
+    #[serde(rename = "darkmulti-6")]
+    Darkmulti6,
+    #[serde(rename = "darkmulti-7")]
+    Darkmulti7,
+    #[serde(rename = "darkmulti-8")]
+    Darkmulti8,
+    #[serde(rename = "darkmulti-9")]
+    Darkmulti9,
+    Darkred,
+    #[serde(rename = "darkred-3")]
+    Darkred3,
+    #[serde(rename = "darkred-4")]
+    Darkred4,
+    #[serde(rename = "darkred-5")]
+    Darkred5,
+    #[serde(rename = "darkred-6")]
+    Darkred6,
+    #[serde(rename = "darkred-7")]
+    Darkred7,
+    #[serde(rename = "darkred-8")]
+    Darkred8,
+    #[serde(rename = "darkred-9")]
+    Darkred9,
+    Goldgreen,
+    #[serde(rename = "goldgreen-3")]
+    Goldgreen3,
+    #[serde(rename = "goldgreen-4")]
+    Goldgreen4,
+    #[serde(rename = "goldgreen-5")]
+    Goldgreen5,
+    #[serde(rename = "goldgreen-6")]
+    Goldgreen6,
+    #[serde(rename = "goldgreen-7")]
+    Goldgreen7,
+    #[serde(rename = "goldgreen-8")]
+    Goldgreen8,
+    #[serde(rename = "goldgreen-9")]
+    Goldgreen9,
+    Goldorange,
+    #[serde(rename = "goldorange-3")]
+    Goldorange3,
+    #[serde(rename = "goldorange-4")]
+    Goldorange4,
+    #[serde(rename = "goldorange-5")]
+    Goldorange5,
+    #[serde(rename = "goldorange-6")]
+    Goldorange6,
+    #[serde(rename = "goldorange-7")]
+    Goldorange7,
+    #[serde(rename = "goldorange-8")]
+    Goldorange8,
+    #[serde(rename = "goldorange-9")]
+    Goldorange9,
+    Goldred,
+    #[serde(rename = "goldred-3")]
+    Goldred3,
+    #[serde(rename = "goldred-4")]
+    Goldred4,
+    #[serde(rename = "goldred-5")]
+    Goldred5,
+    #[serde(rename = "goldred-6")]
+    Goldred6,
+    #[serde(rename = "goldred-7")]
+    Goldred7,
+    #[serde(rename = "goldred-8")]
+    Goldred8,
+    #[serde(rename = "goldred-9")]
+    Goldred9,
+    Greenblue,
+    #[serde(rename = "greenblue-3")]
+    Greenblue3,
+    #[serde(rename = "greenblue-4")]
+    Greenblue4,
+    #[serde(rename = "greenblue-5")]
+    Greenblue5,
+    #[serde(rename = "greenblue-6")]
+    Greenblue6,
+    #[serde(rename = "greenblue-7")]
+    Greenblue7,
+    #[serde(rename = "greenblue-8")]
+    Greenblue8,
+    #[serde(rename = "greenblue-9")]
+    Greenblue9,
+    Greens,
+    Greys,
+    Inferno,
+    Lightgreyred,
+    #[serde(rename = "lightgreyred-3")]
+    Lightgreyred3,
+    #[serde(rename = "lightgreyred-4")]
+    Lightgreyred4,
+    #[serde(rename = "lightgreyred-5")]
+    Lightgreyred5,
+    #[serde(rename = "lightgreyred-6")]
+    Lightgreyred6,
+    #[serde(rename = "lightgreyred-7")]
+    Lightgreyred7,
+    #[serde(rename = "lightgreyred-8")]
+    Lightgreyred8,
+    #[serde(rename = "lightgreyred-9")]
+    Lightgreyred9,
+    Lightgreyteal,
+    #[serde(rename = "lightgreyteal-3")]
+    Lightgreyteal3,
+    #[serde(rename = "lightgreyteal-4")]
+    Lightgreyteal4,
+    #[serde(rename = "lightgreyteal-5")]
+    Lightgreyteal5,
+    #[serde(rename = "lightgreyteal-6")]
+    Lightgreyteal6,
+    #[serde(rename = "lightgreyteal-7")]
+    Lightgreyteal7,
+    #[serde(rename = "lightgreyteal-8")]
+    Lightgreyteal8,
+    #[serde(rename = "lightgreyteal-9")]
+    Lightgreyteal9,
+    Lightmulti,
+    #[serde(rename = "lightmulti-3")]
+    Lightmulti3,
+    #[serde(rename = "lightmulti-4")]
+    Lightmulti4,
+    #[serde(rename = "lightmulti-5")]
+    Lightmulti5,
+    #[serde(rename = "lightmulti-6")]
+    Lightmulti6,
+    #[serde(rename = "lightmulti-7")]
+    Lightmulti7,
+    #[serde(rename = "lightmulti-8")]
+    Lightmulti8,
+    #[serde(rename = "lightmulti-9")]
+    Lightmulti9,
+    Lightorange,
+    #[serde(rename = "lightorange-3")]
+    Lightorange3,
+    #[serde(rename = "lightorange-4")]
+    Lightorange4,
+    #[serde(rename = "lightorange-5")]
+    Lightorange5,
+    #[serde(rename = "lightorange-6")]
+    Lightorange6,
+    #[serde(rename = "lightorange-7")]
+    Lightorange7,
+    #[serde(rename = "lightorange-8")]
+    Lightorange8,
+    #[serde(rename = "lightorange-9")]
+    Lightorange9,
+    Lighttealblue,
+    #[serde(rename = "lighttealblue-3")]
+    Lighttealblue3,
+    #[serde(rename = "lighttealblue-4")]
+    Lighttealblue4,
+    #[serde(rename = "lighttealblue-5")]
+    Lighttealblue5,
+    #[serde(rename = "lighttealblue-6")]
+    Lighttealblue6,
+    #[serde(rename = "lighttealblue-7")]
+    Lighttealblue7,
+    #[serde(rename = "lighttealblue-8")]
+    Lighttealblue8,
+    #[serde(rename = "lighttealblue-9")]
+    Lighttealblue9,
+    Magma,
+    Observable10,
+    Orangered,
+    #[serde(rename = "orangered-3")]
+    Orangered3,
+    #[serde(rename = "orangered-4")]
+    Orangered4,
+    #[serde(rename = "orangered-5")]
+    Orangered5,
+    #[serde(rename = "orangered-6")]
+    Orangered6,
+    #[serde(rename = "orangered-7")]
+    Orangered7,
+    #[serde(rename = "orangered-8")]
+    Orangered8,
+    #[serde(rename = "orangered-9")]
+    Orangered9,
+    Oranges,
+    Paired,
+    Pastel1,
+    Pastel2,
+    Pinkyellowgreen,
+    #[serde(rename = "pinkyellowgreen-10")]
+    Pinkyellowgreen10,
+    #[serde(rename = "pinkyellowgreen-11")]
+    Pinkyellowgreen11,
+    #[serde(rename = "pinkyellowgreen-3")]
+    Pinkyellowgreen3,
+    #[serde(rename = "pinkyellowgreen-4")]
+    Pinkyellowgreen4,
+    #[serde(rename = "pinkyellowgreen-5")]
+    Pinkyellowgreen5,
+    #[serde(rename = "pinkyellowgreen-6")]
+    Pinkyellowgreen6,
+    #[serde(rename = "pinkyellowgreen-7")]
+    Pinkyellowgreen7,
+    #[serde(rename = "pinkyellowgreen-8")]
+    Pinkyellowgreen8,
+    #[serde(rename = "pinkyellowgreen-9")]
+    Pinkyellowgreen9,
+    Plasma,
+    Purpleblue,
+    #[serde(rename = "purpleblue-3")]
+    Purpleblue3,
+    #[serde(rename = "purpleblue-4")]
+    Purpleblue4,
+    #[serde(rename = "purpleblue-5")]
+    Purpleblue5,
+    #[serde(rename = "purpleblue-6")]
+    Purpleblue6,
+    #[serde(rename = "purpleblue-7")]
+    Purpleblue7,
+    #[serde(rename = "purpleblue-8")]
+    Purpleblue8,
+    #[serde(rename = "purpleblue-9")]
+    Purpleblue9,
+    Purplebluegreen,
+    #[serde(rename = "purplebluegreen-3")]
+    Purplebluegreen3,
+    #[serde(rename = "purplebluegreen-4")]
+    Purplebluegreen4,
+    #[serde(rename = "purplebluegreen-5")]
+    Purplebluegreen5,
+    #[serde(rename = "purplebluegreen-6")]
+    Purplebluegreen6,
+    #[serde(rename = "purplebluegreen-7")]
+    Purplebluegreen7,
+    #[serde(rename = "purplebluegreen-8")]
+    Purplebluegreen8,
+    #[serde(rename = "purplebluegreen-9")]
+    Purplebluegreen9,
+    Purplegreen,
+    #[serde(rename = "purplegreen-10")]
+    Purplegreen10,
+    #[serde(rename = "purplegreen-11")]
+    Purplegreen11,
+    #[serde(rename = "purplegreen-3")]
+    Purplegreen3,
+    #[serde(rename = "purplegreen-4")]
+    Purplegreen4,
+    #[serde(rename = "purplegreen-5")]
+    Purplegreen5,
+    #[serde(rename = "purplegreen-6")]
+    Purplegreen6,
+    #[serde(rename = "purplegreen-7")]
+    Purplegreen7,
+    #[serde(rename = "purplegreen-8")]
+    Purplegreen8,
+    #[serde(rename = "purplegreen-9")]
+    Purplegreen9,
+    Purpleorange,
+    #[serde(rename = "purpleorange-10")]
+    Purpleorange10,
+    #[serde(rename = "purpleorange-11")]
+    Purpleorange11,
+    #[serde(rename = "purpleorange-3")]
+    Purpleorange3,
+    #[serde(rename = "purpleorange-4")]
+    Purpleorange4,
+    #[serde(rename = "purpleorange-5")]
+    Purpleorange5,
+    #[serde(rename = "purpleorange-6")]
+    Purpleorange6,
+    #[serde(rename = "purpleorange-7")]
+    Purpleorange7,
+    #[serde(rename = "purpleorange-8")]
+    Purpleorange8,
+    #[serde(rename = "purpleorange-9")]
+    Purpleorange9,
+    Purplered,
+    #[serde(rename = "purplered-3")]
+    Purplered3,
+    #[serde(rename = "purplered-4")]
+    Purplered4,
+    #[serde(rename = "purplered-5")]
+    Purplered5,
+    #[serde(rename = "purplered-6")]
+    Purplered6,
+    #[serde(rename = "purplered-7")]
+    Purplered7,
+    #[serde(rename = "purplered-8")]
+    Purplered8,
+    #[serde(rename = "purplered-9")]
+    Purplered9,
+    Purples,
+    Rainbow,
+    Redblue,
+    #[serde(rename = "redblue-10")]
+    Redblue10,
+    #[serde(rename = "redblue-11")]
+    Redblue11,
+    #[serde(rename = "redblue-3")]
+    Redblue3,
+    #[serde(rename = "redblue-4")]
+    Redblue4,
+    #[serde(rename = "redblue-5")]
+    Redblue5,
+    #[serde(rename = "redblue-6")]
+    Redblue6,
+    #[serde(rename = "redblue-7")]
+    Redblue7,
+    #[serde(rename = "redblue-8")]
+    Redblue8,
+    #[serde(rename = "redblue-9")]
+    Redblue9,
+    Redgrey,
+    #[serde(rename = "redgrey-10")]
+    Redgrey10,
+    #[serde(rename = "redgrey-11")]
+    Redgrey11,
+    #[serde(rename = "redgrey-3")]
+    Redgrey3,
+    #[serde(rename = "redgrey-4")]
+    Redgrey4,
+    #[serde(rename = "redgrey-5")]
+    Redgrey5,
+    #[serde(rename = "redgrey-6")]
+    Redgrey6,
+    #[serde(rename = "redgrey-7")]
+    Redgrey7,
+    #[serde(rename = "redgrey-8")]
+    Redgrey8,
+    #[serde(rename = "redgrey-9")]
+    Redgrey9,
+    Redpurple,
+    #[serde(rename = "redpurple-3")]
+    Redpurple3,
+    #[serde(rename = "redpurple-4")]
+    Redpurple4,
+    #[serde(rename = "redpurple-5")]
+    Redpurple5,
+    #[serde(rename = "redpurple-6")]
+    Redpurple6,
+    #[serde(rename = "redpurple-7")]
+    Redpurple7,
+    #[serde(rename = "redpurple-8")]
+    Redpurple8,
+    #[serde(rename = "redpurple-9")]
+    Redpurple9,
+    Reds,
+    Redyellowblue,
+    #[serde(rename = "redyellowblue-10")]
+    Redyellowblue10,
+    #[serde(rename = "redyellowblue-11")]
+    Redyellowblue11,
+    #[serde(rename = "redyellowblue-3")]
+    Redyellowblue3,
+    #[serde(rename = "redyellowblue-4")]
+    Redyellowblue4,
+    #[serde(rename = "redyellowblue-5")]
+    Redyellowblue5,
+    #[serde(rename = "redyellowblue-6")]
+    Redyellowblue6,
+    #[serde(rename = "redyellowblue-7")]
+    Redyellowblue7,
+    #[serde(rename = "redyellowblue-8")]
+    Redyellowblue8,
+    #[serde(rename = "redyellowblue-9")]
+    Redyellowblue9,
+    Redyellowgreen,
+    #[serde(rename = "redyellowgreen-10")]
+    Redyellowgreen10,
+    #[serde(rename = "redyellowgreen-11")]
+    Redyellowgreen11,
+    #[serde(rename = "redyellowgreen-3")]
+    Redyellowgreen3,
+    #[serde(rename = "redyellowgreen-4")]
+    Redyellowgreen4,
+    #[serde(rename = "redyellowgreen-5")]
+    Redyellowgreen5,
+    #[serde(rename = "redyellowgreen-6")]
+    Redyellowgreen6,
+    #[serde(rename = "redyellowgreen-7")]
+    Redyellowgreen7,
+    #[serde(rename = "redyellowgreen-8")]
+    Redyellowgreen8,
+    #[serde(rename = "redyellowgreen-9")]
+    Redyellowgreen9,
+    Set1,
+    Set2,
+    Set3,
+    Sinebow,
+    Spectral,
+    #[serde(rename = "spectral-10")]
+    Spectral10,
+    #[serde(rename = "spectral-11")]
+    Spectral11,
+    #[serde(rename = "spectral-3")]
+    Spectral3,
+    #[serde(rename = "spectral-4")]
+    Spectral4,
+    #[serde(rename = "spectral-5")]
+    Spectral5,
+    #[serde(rename = "spectral-6")]
+    Spectral6,
+    #[serde(rename = "spectral-7")]
+    Spectral7,
+    #[serde(rename = "spectral-8")]
+    Spectral8,
+    #[serde(rename = "spectral-9")]
+    Spectral9,
+    Tableau10,
+    Tableau20,
+    Tealblues,
+    Teals,
+    Turbo,
+    Viridis,
+    Warmgreys,
+    Yellowgreen,
+    #[serde(rename = "yellowgreen-3")]
+    Yellowgreen3,
+    #[serde(rename = "yellowgreen-4")]
+    Yellowgreen4,
+    #[serde(rename = "yellowgreen-5")]
+    Yellowgreen5,
+    #[serde(rename = "yellowgreen-6")]
+    Yellowgreen6,
+    #[serde(rename = "yellowgreen-7")]
+    Yellowgreen7,
+    #[serde(rename = "yellowgreen-8")]
+    Yellowgreen8,
+    #[serde(rename = "yellowgreen-9")]
+    Yellowgreen9,
+    Yellowgreenblue,
+    #[serde(rename = "yellowgreenblue-3")]
+    Yellowgreenblue3,
+    #[serde(rename = "yellowgreenblue-4")]
+    Yellowgreenblue4,
+    #[serde(rename = "yellowgreenblue-5")]
+    Yellowgreenblue5,
+    #[serde(rename = "yellowgreenblue-6")]
+    Yellowgreenblue6,
+    #[serde(rename = "yellowgreenblue-7")]
+    Yellowgreenblue7,
+    #[serde(rename = "yellowgreenblue-8")]
+    Yellowgreenblue8,
+    #[serde(rename = "yellowgreenblue-9")]
+    Yellowgreenblue9,
+    Yelloworangebrown,
+    #[serde(rename = "yelloworangebrown-3")]
+    Yelloworangebrown3,
+    #[serde(rename = "yelloworangebrown-4")]
+    Yelloworangebrown4,
+    #[serde(rename = "yelloworangebrown-5")]
+    Yelloworangebrown5,
+    #[serde(rename = "yelloworangebrown-6")]
+    Yelloworangebrown6,
+    #[serde(rename = "yelloworangebrown-7")]
+    Yelloworangebrown7,
+    #[serde(rename = "yelloworangebrown-8")]
+    Yelloworangebrown8,
+    #[serde(rename = "yelloworangebrown-9")]
+    Yelloworangebrown9,
+    Yelloworangered,
+    #[serde(rename = "yelloworangered-3")]
+    Yelloworangered3,
+    #[serde(rename = "yelloworangered-4")]
+    Yelloworangered4,
+    #[serde(rename = "yelloworangered-5")]
+    Yelloworangered5,
+    #[serde(rename = "yelloworangered-6")]
+    Yelloworangered6,
+    #[serde(rename = "yelloworangered-7")]
+    Yelloworangered7,
+    #[serde(rename = "yelloworangered-8")]
+    Yelloworangered8,
+    #[serde(rename = "yelloworangered-9")]
+    Yelloworangered9,
+}
+
+/// Sort order for the encoded field.
+///
+/// For continuous fields (quantitative or temporal), `sort` can be either `"ascending"` or
+/// `"descending"`.
+///
+/// For discrete fields, `sort` can be one of the following:
+/// - `"ascending"` or `"descending"` -- for sorting by the values' natural order in
+/// JavaScript.
+/// - [A string indicating an encoding channel name to sort
+/// by](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding) (e.g., `"x"` or
+/// `"y"`) with an optional minus prefix for descending sort (e.g., `"-x"` to sort by
+/// x-field, descending). This channel string is short-form of [a sort-by-encoding
+/// definition](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding). For
+/// example, `"sort": "-x"` is equivalent to `"sort": {"encoding": "x", "order":
+/// "descending"}`.
+/// - [A sort field definition](https://vega.github.io/vega-lite/docs/sort.html#sort-field)
+/// for sorting by another field.
+/// - [An array specifying the field values in preferred
+/// order](https://vega.github.io/vega-lite/docs/sort.html#sort-array). In this case, the
+/// sort order will obey the values in the array, followed by any unspecified values in their
+/// original order. For discrete time field, values in the sort array can be [date-time
+/// definition objects](struct.DateTime.html). In addition, for time units `"month"` and `"day"`,
+/// the values can be the month or day names (case insensitive) or their 3-letter initials
+/// (e.g., `"Mon"`, `"Tue"`).
+/// - `null` indicating no sort.
+///
+/// __Default value:__ `"ascending"`
+///
+/// __Note:__ `null` and sorting by another channel is not supported for `row` and `column`.
+///
+/// __See also:__ [`sort`](https://vega.github.io/vega-lite/docs/sort.html) documentation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum SortUnion {
+    EncodingSortField(EncodingSortField),
+    Enum(Sort),
+    UnionArray(Vec<UnionWith>),
 }
 
 /// A sort definition for sorting a discrete scale in an encoding field definition.
@@ -3208,9 +5360,9 @@ pub struct EncodingSortField {
     ///
     /// __Default value:__ If unspecified, defaults to the field specified in the outer data
     /// reference.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
     #[builder(default)]
-    pub field: Option<Field>,
+    pub field: RemovableValue<Field>,
     /// An [aggregate operation](https://vega.github.io/vega-lite/docs/aggregate.html#ops) to
     /// perform on the field prior to sorting (e.g., `"count"`, `"mean"` and `"median"`). An
     /// aggregation is required when there are multiple values of the sort field for each encoded
@@ -3233,6 +5385,86 @@ pub struct EncodingSortField {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub encoding: Option<SortByChannel>,
+}
+
+/// The [encoding channel](https://vega.github.io/vega-lite/docs/encoding.html#channels) to
+/// sort by (e.g., `"x"`, `"y"`)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SortByChannel {
+    Color,
+    Fill,
+    #[serde(rename = "fillOpacity")]
+    FillOpacity,
+    Opacity,
+    Shape,
+    Size,
+    Stroke,
+    #[serde(rename = "strokeOpacity")]
+    StrokeOpacity,
+    #[serde(rename = "strokeWidth")]
+    StrokeWidth,
+    Text,
+    X,
+    Y,
+}
+
+/// The sort order. One of `"ascending"` (default) or `"descending"`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SortOrder {
+    Ascending,
+    Descending,
+}
+
+/// The sort order. One of `"ascending"` (default) or `"descending"`.
+///
+/// The [encoding channel](https://vega.github.io/vega-lite/docs/encoding.html#channels) to
+/// sort by (e.g., `"x"`, `"y"`)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Sort {
+    Ascending,
+    Color,
+    Descending,
+    Fill,
+    #[serde(rename = "fillOpacity")]
+    FillOpacity,
+    Opacity,
+    Shape,
+    Size,
+    #[serde(rename = "-color")]
+    SortColor,
+    #[serde(rename = "-fill")]
+    SortFill,
+    #[serde(rename = "-fillOpacity")]
+    SortFillOpacity,
+    #[serde(rename = "-opacity")]
+    SortOpacity,
+    #[serde(rename = "-shape")]
+    SortShape,
+    #[serde(rename = "-size")]
+    SortSize,
+    #[serde(rename = "-stroke")]
+    SortStroke,
+    #[serde(rename = "-strokeOpacity")]
+    SortStrokeOpacity,
+    #[serde(rename = "-strokeWidth")]
+    SortStrokeWidth,
+    #[serde(rename = "-text")]
+    SortText,
+    #[serde(rename = "-x")]
+    SortX,
+    #[serde(rename = "-y")]
+    SortY,
+    Stroke,
+    #[serde(rename = "strokeOpacity")]
+    StrokeOpacity,
+    #[serde(rename = "strokeWidth")]
+    StrokeWidth,
+    Text,
+    X,
+    Y,
 }
 
 /// Color of the marks – either fill or stroke color based on  the `filled` property of mark
@@ -3265,7 +5497,9 @@ pub struct EncodingSortField {
 /// `color` encoding if conflicting encodings are specified.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ColorClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -3281,7 +5515,6 @@ pub struct ColorClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -3398,10 +5631,9 @@ pub struct ColorClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -3496,6 +5728,16 @@ pub struct ColorClass {
     pub value: Option<ConditionalValueDefGradientStringNullExprRefValue>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ColorCondition {
+    ConditionalPValueDefGradientStringNullExprRef(ConditionalPValueDefGradientStringNullExprRef),
+    ConditionalValueDefGradientStringNullExprRefArray(
+        Vec<ConditionalValueDefGradientStringNullExprRef>,
+    ),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ConditionalValueDefGradientStringNullExprRef {
@@ -3520,6 +5762,18 @@ pub struct ConditionalValueDefGradientStringNullExprRef {
     pub param: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ConditionalValueDefGradientStringNullExprRefValue {
+    String(String),
+    ValueLinearGradient(ValueLinearGradient),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ValueLinearGradient {
@@ -3600,6 +5854,16 @@ pub struct ValueLinearGradient {
     pub expr: Option<String>,
 }
 
+/// The type of gradient. Use `"linear"` for a linear gradient.
+///
+/// The type of gradient. Use `"radial"` for a radial gradient.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Gradient {
+    Linear,
+    Radial,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct GradientStop {
@@ -3613,7 +5877,9 @@ pub struct GradientStop {
     pub offset: Option<f64>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ConditionalPValueDefGradientStringNullExprRef {
     /// Predicate for triggering the condition
@@ -3648,7 +5914,6 @@ pub struct ConditionalPValueDefGradientStringNullExprRef {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -3754,10 +6019,9 @@ pub struct ConditionalPValueDefGradientStringNullExprRef {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -3849,7 +6113,9 @@ pub struct ConditionalPValueDefGradientStringNullExprRef {
 /// A field definition for the horizontal facet of trellis plots.
 ///
 /// A field definition for the vertical facet of trellis plots.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct RowColumnEncodingFieldDef {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -3880,7 +6146,6 @@ pub struct RowColumnEncodingFieldDef {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -3972,10 +6237,9 @@ pub struct RowColumnEncodingFieldDef {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -4061,7 +6325,9 @@ pub struct RowColumnEncodingFieldDef {
 }
 
 /// Headers of row / column channels for faceted plots.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Header {
     /// When used with the default `"number"` and `"time"` format type, the text formatting
@@ -4094,26 +6360,22 @@ pub struct Header {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
     /// Horizontal text alignment of header labels. One of `"left"`, `"center"`, or `"right"`.
-    #[serde(rename = "labelAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_align: Option<TitleAlignUnion>,
     /// The anchor position for placing the labels. One of `"start"`, `"middle"`, or `"end"`. For
     /// example, with a label orientation of top these anchor positions map to a left-, center-,
     /// or right-aligned label.
-    #[serde(rename = "labelAnchor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_anchor: Option<TitleAnchorEnum>,
     /// The rotation angle of the header labels.
     ///
     /// __Default value:__ `0` for column header, `-90` for row header.
-    #[serde(rename = "labelAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_angle: Option<f64>,
@@ -4121,12 +6383,10 @@ pub struct Header {
     /// `"top"`, `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and
     /// `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated
     /// relative to the `titleLineHeight` rather than `titleFontSize` alone.
-    #[serde(rename = "labelBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_baseline: Option<TextBaseline>,
     /// The color of the header label, can be in hex color code or regular color name.
-    #[serde(rename = "labelColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_color: Option<Box<Color>>,
@@ -4134,27 +6394,22 @@ pub struct Header {
     ///
     /// __Note:__ The label text and value can be assessed via the `label` and `value` properties
     /// of the header's backing `datum` object.
-    #[serde(rename = "labelExpr")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_expr: Option<String>,
     /// The font of the header label.
-    #[serde(rename = "labelFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font: Option<Box<Color>>,
     /// The font size of the header label, in pixels.
-    #[serde(rename = "labelFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_size: Option<CornerRadiusUnion>,
     /// The font style of the header label.
-    #[serde(rename = "labelFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_style: Option<Box<Color>>,
     /// The font weight of the header label.
-    #[serde(rename = "labelFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_weight: Option<FontWeightUnion>,
@@ -4162,25 +6417,21 @@ pub struct Header {
     /// truncated if the rendered size exceeds the limit.
     ///
     /// __Default value:__ `0`, indicating no limit
-    #[serde(rename = "labelLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_limit: Option<CornerRadiusUnion>,
     /// Line height in pixels for multi-line header labels or title text with `"line-top"` or
     /// `"line-bottom"` baseline.
-    #[serde(rename = "labelLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_line_height: Option<CornerRadiusUnion>,
     /// The orientation of the header label. One of `"top"`, `"bottom"`, `"left"` or `"right"`.
-    #[serde(rename = "labelOrient")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_orient: Option<Orient>,
     /// The padding, in pixel, between facet header's label and the plot.
     ///
     /// __Default value:__ `10`
-    #[serde(rename = "labelPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_padding: Option<CornerRadiusUnion>,
@@ -4217,21 +6468,18 @@ pub struct Header {
     #[builder(default)]
     pub title: RemovableValue<LegendText>,
     /// Horizontal text alignment (to the anchor) of header titles.
-    #[serde(rename = "titleAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_align: Option<TitleAlignUnion>,
     /// The anchor position for placing the title. One of `"start"`, `"middle"`, or `"end"`. For
     /// example, with an orientation of top these anchor positions map to a left-, center-, or
     /// right-aligned title.
-    #[serde(rename = "titleAnchor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_anchor: Option<TitleAnchorEnum>,
     /// The rotation angle of the header title.
     ///
     /// __Default value:__ `0`.
-    #[serde(rename = "titleAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_angle: Option<f64>,
@@ -4241,34 +6489,28 @@ pub struct Header {
     /// relative to the `titleLineHeight` rather than `titleFontSize` alone.
     ///
     /// __Default value:__ `"middle"`
-    #[serde(rename = "titleBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_baseline: Option<TextBaseline>,
     /// Color of the header title, can be in hex color code or regular color name.
-    #[serde(rename = "titleColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_color: Option<Box<Color>>,
     /// Font of the header title. (e.g., `"Helvetica Neue"`).
-    #[serde(rename = "titleFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font: Option<Box<Color>>,
     /// Font size of the header title.
-    #[serde(rename = "titleFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_size: Option<CornerRadiusUnion>,
     /// The font style of the header title.
-    #[serde(rename = "titleFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_style: Option<Box<Color>>,
     /// Font weight of the header title. This can be either a string (e.g `"bold"`, `"normal"`)
     /// or a number (`100`, `200`, `300`, ..., `900` where `"normal"` = `400` and `"bold"` =
     /// `700`).
-    #[serde(rename = "titleFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_weight: Option<FontWeightUnion>,
@@ -4276,28 +6518,98 @@ pub struct Header {
     /// truncated if the rendered size exceeds the limit.
     ///
     /// __Default value:__ `0`, indicating no limit
-    #[serde(rename = "titleLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_limit: Option<CornerRadiusUnion>,
     /// Line height in pixels for multi-line header title text or title text with `"line-top"` or
     /// `"line-bottom"` baseline.
-    #[serde(rename = "titleLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_line_height: Option<CornerRadiusUnion>,
     /// The orientation of the header title. One of `"top"`, `"bottom"`, `"left"` or `"right"`.
-    #[serde(rename = "titleOrient")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_orient: Option<Orient>,
     /// The padding, in pixel, between facet header's title and the label.
     ///
     /// __Default value:__ `10`
-    #[serde(rename = "titlePadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_padding: Option<CornerRadiusUnion>,
+}
+
+/// The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for
+/// the encoded field or constant value (`datum`). It can also be a `"geojson"` type for
+/// encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
+///
+/// Vega-Lite automatically infers data types in many cases as discussed below. However, type
+/// is required for a field if: (1) the field is not nominal and the field encoding has no
+/// specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort`
+/// order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin`
+/// or `timeUnit`.
+///
+/// __Default value:__
+///
+/// 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has
+/// `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the
+/// following criteria:
+/// - `"quantitative"` is the default type if (1) the encoded field contains `bin` or
+/// `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or
+/// `longitude` channel or (3) if the specified scale type is [a quantitative
+/// scale](https://vega.github.io/vega-lite/docs/scale.html#type).
+/// - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2)
+/// the specified scale type is a time or utc scale
+/// - `"ordinal"` is the default type if (1) the encoded field contains a [custom `sort`
+/// order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2)
+/// the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is
+/// `order`.
+///
+/// 2) For a constant value in data domain (`datum`):
+/// - `"quantitative"` if the datum is a number
+/// - `"nominal"` if the datum is a string
+/// - `"temporal"` if the datum is [a date time
+/// object](https://vega.github.io/vega-lite/docs/datetime.html)
+///
+/// __Note:__
+/// - Data `type` describes the semantics of the data rather than the primitive data types
+/// (number, string, etc.). The same primitive data type can have different types of
+/// measurement. For example, numeric data can represent quantitative, ordinal, or nominal
+/// data.
+/// - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07
+/// 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g.,
+/// `1552199579097`).
+/// - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type`
+/// property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"`
+/// (for using an ordinal bin
+/// scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+/// - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the
+/// `type` property can be either `"temporal"` (default, for using a temporal scale) or
+/// [`"ordinal"` (for using an ordinal
+/// scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+/// - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html),
+/// the `type` property refers to the post-aggregation data type. For example, we can
+/// calculate count `distinct` of a categorical field `"cat"` using `{"aggregate":
+/// "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
+/// - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they
+/// must have exactly the same type as their primary channels (e.g., `x`, `y`).
+///
+/// __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StandardType {
+    Nominal,
+    Ordinal,
+    Quantitative,
+    Temporal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum SortArray {
+    Enum(SortOrder),
+    SortEncodingSortField(SortEncodingSortField),
+    UnionArray(Vec<UnionWith>),
 }
 
 /// A sort definition for sorting a discrete scale in an encoding field definition.
@@ -4338,7 +6650,9 @@ pub struct SortEncodingSortField {
 /// The URL of an image mark.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct DescriptionClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -4354,7 +6668,6 @@ pub struct DescriptionClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -4435,7 +6748,6 @@ pub struct DescriptionClass {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
@@ -4447,10 +6759,9 @@ pub struct DescriptionClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -4541,6 +6852,29 @@ pub struct DescriptionClass {
     pub value: Option<Box<Color>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum DescriptionBin {
+    BinParams(BinParams),
+    Bool(bool),
+    Enum(BinEnum),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BinEnum {
+    Binned,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum DescriptionCondition {
+    PurpleConditionalPExprRef(PurpleConditionalPExprRef),
+    PurpleConditionalValueDefStringExprRefArray(Vec<PurpleConditionalValueDefStringExprRef>),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct PurpleConditionalValueDefStringExprRef {
@@ -4565,7 +6899,9 @@ pub struct PurpleConditionalValueDefStringExprRef {
     pub param: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct PurpleConditionalPExprRef {
     /// Predicate for triggering the condition
@@ -4600,7 +6936,6 @@ pub struct PurpleConditionalPExprRef {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -4706,10 +7041,9 @@ pub struct PurpleConditionalPExprRef {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -4798,6 +7132,14 @@ pub struct PurpleConditionalPExprRef {
     pub datum: Option<PrimitiveValue>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Detail {
+    TypedFieldDef(TypedFieldDef),
+    TypedFieldDefArray(Vec<TypedFieldDef>),
+}
+
 /// Field Def without scale (and without bin: "binned" support).
 ///
 /// Definition object for a data field, its type and transformation of an encoding channel.
@@ -4805,7 +7147,9 @@ pub struct PurpleConditionalPExprRef {
 /// A data field to use as a unique key for data binding. When a visualization’s data is
 /// updated, the key value will be used to match data elements to existing mark instances.
 /// Use a key channel to enable object constancy for transitions over dynamic data.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct TypedFieldDef {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -4821,7 +7165,6 @@ pub struct TypedFieldDef {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -4869,10 +7212,9 @@ pub struct TypedFieldDef {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -4960,7 +7302,9 @@ pub struct TypedFieldDef {
 /// A field definition for the (flexible) facet of trellis plots.
 ///
 /// If either `row` or `column` is specified, this channel will be ignored.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct FacetEncodingFieldDef {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -4994,7 +7338,6 @@ pub struct FacetEncodingFieldDef {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -5122,10 +7465,9 @@ pub struct FacetEncodingFieldDef {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -5210,6 +7552,14 @@ pub struct FacetEncodingFieldDef {
     pub facet_encoding_field_def_type: Option<StandardType>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Spacing {
+    Double(f64),
+    RowColNumber(RowColNumber),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct RowColNumber {
@@ -5251,7 +7601,9 @@ pub struct RowColNumber {
 /// `color` encoding if conflicting encodings are specified.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct FillClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -5267,7 +7619,6 @@ pub struct FillClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -5384,10 +7735,9 @@ pub struct FillClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -5516,7 +7866,9 @@ pub struct FillClass {
 /// property.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct FillOpacityClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -5532,7 +7884,6 @@ pub struct FillOpacityClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -5649,10 +8000,9 @@ pub struct FillOpacityClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -5755,7 +8105,9 @@ pub struct FillOpacityClass {
 /// The URL of an image mark.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct HrefClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -5771,7 +8123,6 @@ pub struct HrefClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -5852,7 +8203,6 @@ pub struct HrefClass {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
@@ -5864,10 +8214,9 @@ pub struct HrefClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -5965,7 +8314,9 @@ pub struct HrefClass {
 /// A data field to use as a unique key for data binding. When a visualization’s data is
 /// updated, the key value will be used to match data elements to existing mark instances.
 /// Use a key channel to enable object constancy for transitions over dynamic data.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct KeyClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -5981,7 +8332,6 @@ pub struct KeyClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -6029,10 +8379,9 @@ pub struct KeyClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -6120,7 +8469,9 @@ pub struct KeyClass {
 /// Latitude position of geographically projected marks.
 ///
 /// Longitude position of geographically projected marks.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct LatitudeClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -6136,7 +8487,6 @@ pub struct LatitudeClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -6184,10 +8534,9 @@ pub struct LatitudeClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -6302,7 +8651,9 @@ pub struct LatitudeClass {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Latitude2Class {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -6318,7 +8669,6 @@ pub struct Latitude2Class {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -6366,10 +8716,9 @@ pub struct Latitude2Class {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -6464,10 +8813,28 @@ pub struct Latitude2Class {
     pub value: Option<Latitude2Value>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Latitude2Value {
+    BackgroundExprRef(BackgroundExprRef),
+    Double(f64),
+    Enum(ValueEnum),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ValueEnum {
+    Height,
+    Width,
+}
+
 /// Latitude position of geographically projected marks.
 ///
 /// Longitude position of geographically projected marks.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct LongitudeClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -6483,7 +8850,6 @@ pub struct LongitudeClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -6531,10 +8897,9 @@ pub struct LongitudeClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -6649,7 +9014,9 @@ pub struct LongitudeClass {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Longitude2Class {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -6665,7 +9032,6 @@ pub struct Longitude2Class {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -6713,10 +9079,9 @@ pub struct Longitude2Class {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -6845,7 +9210,9 @@ pub struct Longitude2Class {
 /// property.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct OpacityClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -6861,7 +9228,6 @@ pub struct OpacityClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -6978,10 +9344,9 @@ pub struct OpacityClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -7076,7 +9441,17 @@ pub struct OpacityClass {
     pub value: Option<CornerRadiusUnion>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Order {
+    OrderDef(OrderDef),
+    OrderFieldDefArray(Vec<OrderFieldDef>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct OrderFieldDef {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -7092,7 +9467,6 @@ pub struct OrderFieldDef {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -7144,10 +9518,9 @@ pub struct OrderFieldDef {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -7232,7 +9605,9 @@ pub struct OrderFieldDef {
     pub order_field_def_type: Option<StandardType>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct OrderDef {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -7248,7 +9623,6 @@ pub struct OrderDef {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -7300,10 +9674,9 @@ pub struct OrderDef {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -7403,6 +9776,20 @@ pub struct OrderDef {
     pub value: Option<CornerRadiusUnion>,
 }
 
+/// One or more value definition(s) with [a parameter or a test
+/// predicate](https://vega.github.io/vega-lite/docs/condition.html).
+///
+/// __Note:__ A field definition's `condition` property can only contain [conditional value
+/// definitions](https://vega.github.io/vega-lite/docs/condition.html#value) since Vega-Lite
+/// only allows at most one encoded field per encoding channel.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum OrderFieldDefCondition {
+    ConditionalPValueDefNumber(ConditionalPValueDefNumber),
+    ConditionalValueDefNumberArray(Vec<ConditionalValueDefNumber>),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ConditionalValueDefNumber {
@@ -7461,7 +9848,9 @@ pub struct ConditionalPValueDefNumber {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct RadiusClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -7477,7 +9866,6 @@ pub struct RadiusClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -7600,10 +9988,9 @@ pub struct RadiusClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -7698,6 +10085,28 @@ pub struct RadiusClass {
     pub value: Option<Latitude2Value>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Stack {
+    Bool(bool),
+    Enum(StackOffset),
+}
+
+/// Mode for stacking marks. One of `"zero"` (default), `"center"`, or `"normalize"`. The
+/// `"zero"` offset will stack starting at `0`. The `"center"` offset will center the stacks.
+/// The `"normalize"` offset will compute percentage values for each stack point, with output
+/// values in the range `[0,1]`.
+///
+/// __Default value:__ `"zero"`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StackOffset {
+    Center,
+    Normalize,
+    Zero,
+}
+
 /// Latitude-2 position for geographically projected ranged `"area"`, `"bar"`, `"rect"`, and
 /// `"rule"`.
 ///
@@ -7724,7 +10133,9 @@ pub struct RadiusClass {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Radius2Class {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -7740,7 +10151,6 @@ pub struct Radius2Class {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -7788,10 +10198,9 @@ pub struct Radius2Class {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -7903,7 +10312,9 @@ pub struct Radius2Class {
 /// property. (`"circle"` if unset.)
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct MarkPropDefStringNullTypeForShape {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -7919,7 +10330,6 @@ pub struct MarkPropDefStringNullTypeForShape {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -8036,10 +10446,9 @@ pub struct MarkPropDefStringNullTypeForShape {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -8134,6 +10543,14 @@ pub struct MarkPropDefStringNullTypeForShape {
     pub value: Option<Box<Color>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ShapeCondition {
+    ConditionalPValueDefStringNullExprRef(ConditionalPValueDefStringNullExprRef),
+    ConditionalValueDefStringNullExprRefArray(Vec<ConditionalValueDefStringNullExprRef>),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ConditionalValueDefStringNullExprRef {
@@ -8158,7 +10575,9 @@ pub struct ConditionalValueDefStringNullExprRef {
     pub param: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ConditionalPValueDefStringNullExprRef {
     /// Predicate for triggering the condition
@@ -8193,7 +10612,6 @@ pub struct ConditionalPValueDefStringNullExprRef {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -8299,10 +10717,9 @@ pub struct ConditionalPValueDefStringNullExprRef {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -8425,7 +10842,9 @@ pub struct ConditionalPValueDefStringNullExprRef {
 /// property.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct SizeClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -8441,7 +10860,6 @@ pub struct SizeClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -8558,10 +10976,9 @@ pub struct SizeClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -8686,7 +11103,9 @@ pub struct SizeClass {
 /// `color` encoding if conflicting encodings are specified.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct StrokeClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -8702,7 +11121,6 @@ pub struct StrokeClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -8819,10 +11237,9 @@ pub struct StrokeClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -8922,7 +11339,9 @@ pub struct StrokeClass {
 /// __Default value:__ `[1,0]` (No dash).
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct MarkPropDefNumber {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -8938,7 +11357,6 @@ pub struct MarkPropDefNumber {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -9055,10 +11473,9 @@ pub struct MarkPropDefNumber {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -9153,6 +11570,14 @@ pub struct MarkPropDefNumber {
     pub value: Option<StrokeDashUnion>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum StrokeDashCondition {
+    ConditionalParameterValueDefNumberExprRefClass(ConditionalParameterValueDefNumberExprRefClass),
+    ConditionalValueDefNumberExprRefElementArray(Vec<ConditionalValueDefNumberExprRefElement>),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ConditionalValueDefNumberExprRefElement {
@@ -9177,7 +11602,22 @@ pub struct ConditionalValueDefNumberExprRefElement {
     pub param: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+/// The projection’s translation offset as a two-element array `[tx, ty]`.
+///
+/// A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient
+/// definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values
+/// between `0` to `1` for opacity).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ConditionalValueDefNumberExprRefValueUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    DoubleArray(Vec<f64>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ConditionalParameterValueDefNumberExprRefClass {
     /// Predicate for triggering the condition
@@ -9212,7 +11652,6 @@ pub struct ConditionalParameterValueDefNumberExprRefClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -9318,10 +11757,9 @@ pub struct ConditionalParameterValueDefNumberExprRefClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -9444,7 +11882,9 @@ pub struct ConditionalParameterValueDefNumberExprRefClass {
 /// property.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct StrokeOpacityClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -9460,7 +11900,6 @@ pub struct StrokeOpacityClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -9577,10 +12016,9 @@ pub struct StrokeOpacityClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -9709,7 +12147,9 @@ pub struct StrokeOpacityClass {
 /// property.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct StrokeWidthClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -9725,7 +12165,6 @@ pub struct StrokeWidthClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -9842,10 +12281,9 @@ pub struct StrokeWidthClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -9943,7 +12381,9 @@ pub struct StrokeWidthClass {
 /// Text of the `text` mark.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct TextDef {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -9959,7 +12399,6 @@ pub struct TextDef {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -10040,7 +12479,6 @@ pub struct TextDef {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
@@ -10052,10 +12490,9 @@ pub struct TextDef {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -10150,6 +12587,14 @@ pub struct TextDef {
     pub value: Option<ConditionalPredicateValueDefTextExprRefText>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TextCondition {
+    ConditionalP(ConditionalP),
+    ConditionalValueDefTextExprRefArray(Vec<ConditionalValueDefTextExprRef>),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ConditionalValueDefTextExprRef {
@@ -10174,7 +12619,23 @@ pub struct ConditionalValueDefTextExprRef {
     pub param: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+/// A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient
+/// definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values
+/// between `0` to `1` for opacity).
+///
+/// The title text.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ConditionalValueDefTextExprRefText {
+    BackgroundExprRef(BackgroundExprRef),
+    String(String),
+    StringArray(Vec<String>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ConditionalP {
     /// Predicate for triggering the condition
@@ -10209,7 +12670,6 @@ pub struct ConditionalP {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -10279,7 +12739,6 @@ pub struct ConditionalP {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
@@ -10291,10 +12750,9 @@ pub struct ConditionalP {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -10379,6 +12837,20 @@ pub struct ConditionalP {
     pub conditional_p_type: Option<StandardType>,
 }
 
+/// A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient
+/// definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values
+/// between `0` to `1` for opacity).
+///
+/// The title text.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ConditionalPredicateValueDefTextExprRefText {
+    BackgroundExprRef(BackgroundExprRef),
+    String(String),
+    StringArray(Vec<String>),
+}
+
 /// The outer radius in pixels of arc marks.
 ///
 /// - For arc marks, the arc length in radians if theta2 is not specified, otherwise the
@@ -10389,7 +12861,9 @@ pub struct ConditionalP {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ThetaClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -10405,7 +12879,6 @@ pub struct ThetaClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -10528,10 +13001,9 @@ pub struct ThetaClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -10652,7 +13124,9 @@ pub struct ThetaClass {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Theta2Class {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -10668,7 +13142,6 @@ pub struct Theta2Class {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -10716,10 +13189,9 @@ pub struct Theta2Class {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -10814,7 +13286,222 @@ pub struct Theta2Class {
     pub value: Option<Latitude2Value>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct TimeFieldDef {
+    /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
+    /// `"max"`, `"count"`).
+    ///
+    /// __Default value:__ `undefined` (None)
+    ///
+    /// __See also:__ [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html)
+    /// documentation.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub aggregate: Option<Aggregate>,
+    /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
+    /// the marks will be positioned at the beginning of the band if set to `0`, and at the
+    /// middle of the band if set to `0.5`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub band_position: Option<f64>,
+    /// A flag for binning a `quantitative` field, [an object defining binning
+    /// parameters](https://vega.github.io/vega-lite/docs/bin.html#bin-parameters), or indicating
+    /// that the data for `x` or `y` channel are binned before they are imported into Vega-Lite
+    /// (`"binned"`).
+    ///
+    /// - If `true`, default [binning
+    /// parameters](https://vega.github.io/vega-lite/docs/bin.html#bin-parameters) will be
+    /// applied.
+    ///
+    /// - If `"binned"`, this indicates that the data for the `x` (or `y`) channel are already
+    /// binned. You can map the bin-start field to `x` (or `y`) and the bin-end field to `x2` (or
+    /// `y2`). The scale and axis will be formatted similar to binning in Vega-Lite.  To adjust
+    /// the axis ticks based on the bin step, you can also set the axis's
+    /// [`tickMinStep`](https://vega.github.io/vega-lite/docs/axis.html#ticks) property.
+    ///
+    /// __Default value:__ `false`
+    ///
+    /// __See also:__ [`bin`](https://vega.github.io/vega-lite/docs/bin.html) documentation.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub bin: Option<AngleBin>,
+    /// __Required.__ A string defining the name of the field from which to pull a data value or
+    /// an object defining iterated values from the
+    /// [`repeat`](https://vega.github.io/vega-lite/docs/repeat.html) operator.
+    ///
+    /// __See also:__ [`field`](https://vega.github.io/vega-lite/docs/field.html) documentation.
+    ///
+    /// __Notes:__ 1)  Dots (`.`) and brackets (`[` and `]`) can be used to access nested objects
+    /// (e.g., `"field": "foo.bar"` and `"field": "foo['bar']"`). If field names contain dots or
+    /// brackets but are not nested, you can use `\\` to escape dots and brackets (e.g.,
+    /// `"a\\.b"` and `"a\\[0\\]"`). See more details about escaping in the [field
+    /// documentation](https://vega.github.io/vega-lite/docs/field.html). 2) `field` is not
+    /// required if `aggregate` is `count`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub field: Option<Field>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub rescale: Option<bool>,
+    /// An object defining properties of the channel's scale, which is the function that
+    /// transforms values in the data domain (numbers, dates, strings, etc) to visual values
+    /// (pixels, colors, sizes) of the encoding channels.
+    ///
+    /// If `null`, the scale will be [disabled and the data value will be directly
+    /// encoded](https://vega.github.io/vega-lite/docs/scale.html#disable).
+    ///
+    /// __Default value:__ If undefined, default [scale
+    /// properties](https://vega.github.io/vega-lite/docs/scale.html) are applied.
+    ///
+    /// __See also:__ [`scale`](https://vega.github.io/vega-lite/docs/scale.html) documentation.
+    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    #[builder(default)]
+    pub scale: RemovableValue<Scale>,
+    /// Sort order for the encoded field.
+    ///
+    /// For continuous fields (quantitative or temporal), `sort` can be either `"ascending"` or
+    /// `"descending"`.
+    ///
+    /// For discrete fields, `sort` can be one of the following:
+    /// - `"ascending"` or `"descending"` -- for sorting by the values' natural order in
+    /// JavaScript.
+    /// - [A string indicating an encoding channel name to sort
+    /// by](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding) (e.g., `"x"` or
+    /// `"y"`) with an optional minus prefix for descending sort (e.g., `"-x"` to sort by
+    /// x-field, descending). This channel string is short-form of [a sort-by-encoding
+    /// definition](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding). For
+    /// example, `"sort": "-x"` is equivalent to `"sort": {"encoding": "x", "order":
+    /// "descending"}`.
+    /// - [A sort field definition](https://vega.github.io/vega-lite/docs/sort.html#sort-field)
+    /// for sorting by another field.
+    /// - [An array specifying the field values in preferred
+    /// order](https://vega.github.io/vega-lite/docs/sort.html#sort-array). In this case, the
+    /// sort order will obey the values in the array, followed by any unspecified values in their
+    /// original order. For discrete time field, values in the sort array can be [date-time
+    /// definition objects](struct.DateTime.html). In addition, for time units `"month"` and `"day"`,
+    /// the values can be the month or day names (case insensitive) or their 3-letter initials
+    /// (e.g., `"Mon"`, `"Tue"`).
+    /// - `null` indicating no sort.
+    ///
+    /// __Default value:__ `"ascending"`
+    ///
+    /// __Note:__ `null` and sorting by another channel is not supported for `row` and `column`.
+    ///
+    /// __See also:__ [`sort`](https://vega.github.io/vega-lite/docs/sort.html) documentation.
+    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    #[builder(default)]
+    pub sort: RemovableValue<SortUnion>,
+    /// Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a
+    /// temporal field that gets casted as
+    /// ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
+    ///
+    /// __Default value:__ `undefined` (None)
+    ///
+    /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
+    /// documentation.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
+    /// A title for the field. If `null`, the title will be removed.
+    ///
+    /// __Default value:__  derived from the field's name and transformation function
+    /// (`aggregate`, `bin` and `timeUnit`). If the field has an aggregate function, the function
+    /// is displayed as part of the title (e.g., `"Sum of Profit"`). If the field is binned or
+    /// has a time unit applied, the applied function is shown in parentheses (e.g., `"Profit
+    /// (binned)"`, `"Transaction Date (year-month)"`). Otherwise, the title is simply the field
+    /// name.
+    ///
+    /// __Notes__:
+    ///
+    /// 1) You can customize the default field title format by providing the
+    /// [`fieldTitle`](https://vega.github.io/vega-lite/docs/config.html#top-level-config)
+    /// property in the [config](https://vega.github.io/vega-lite/docs/config.html) or
+    /// [`fieldTitle` function via the `compile` function's
+    /// options](https://vega.github.io/vega-lite/usage/compile.html#field-title).
+    ///
+    /// 2) If both field definition's `title` and axis, header, or legend `title` are defined,
+    /// axis/header/legend title will be used.
+    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    #[builder(default)]
+    pub title: RemovableValue<LegendText>,
+    /// The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for
+    /// the encoded field or constant value (`datum`). It can also be a `"geojson"` type for
+    /// encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
+    ///
+    /// Vega-Lite automatically infers data types in many cases as discussed below. However, type
+    /// is required for a field if: (1) the field is not nominal and the field encoding has no
+    /// specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort`
+    /// order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin`
+    /// or `timeUnit`.
+    ///
+    /// __Default value:__
+    ///
+    /// 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has
+    /// `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the
+    /// following criteria:
+    /// - `"quantitative"` is the default type if (1) the encoded field contains `bin` or
+    /// `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or
+    /// `longitude` channel or (3) if the specified scale type is [a quantitative
+    /// scale](https://vega.github.io/vega-lite/docs/scale.html#type).
+    /// - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2)
+    /// the specified scale type is a time or utc scale
+    /// - `"ordinal"` is the default type if (1) the encoded field contains a [custom `sort`
+    /// order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2)
+    /// the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is
+    /// `order`.
+    ///
+    /// 2) For a constant value in data domain (`datum`):
+    /// - `"quantitative"` if the datum is a number
+    /// - `"nominal"` if the datum is a string
+    /// - `"temporal"` if the datum is [a date time
+    /// object](https://vega.github.io/vega-lite/docs/datetime.html)
+    ///
+    /// __Note:__
+    /// - Data `type` describes the semantics of the data rather than the primitive data types
+    /// (number, string, etc.). The same primitive data type can have different types of
+    /// measurement. For example, numeric data can represent quantitative, ordinal, or nominal
+    /// data.
+    /// - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07
+    /// 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g.,
+    /// `1552199579097`).
+    /// - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type`
+    /// property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"`
+    /// (for using an ordinal bin
+    /// scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+    /// - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the
+    /// `type` property can be either `"temporal"` (default, for using a temporal scale) or
+    /// [`"ordinal"` (for using an ordinal
+    /// scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
+    /// - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html),
+    /// the `type` property refers to the post-aggregation data type. For example, we can
+    /// calculate count `distinct` of a categorical field `"cat"` using `{"aggregate":
+    /// "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
+    /// - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they
+    /// must have exactly the same type as their primary channels (e.g., `x`, `y`).
+    ///
+    /// __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time_field_def_type: Option<StandardType>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum EncodingTooltip {
+    FieldOrDatumDefWithConditionStringFieldDefString(
+        FieldOrDatumDefWithConditionStringFieldDefString,
+    ),
+    StringFieldDefArray(Vec<StringFieldDef>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct StringFieldDef {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -10830,7 +13517,6 @@ pub struct StringFieldDef {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -10900,7 +13586,6 @@ pub struct StringFieldDef {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
@@ -10912,10 +13597,9 @@ pub struct StringFieldDef {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -11001,7 +13685,9 @@ pub struct StringFieldDef {
 }
 
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct FieldOrDatumDefWithConditionStringFieldDefString {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -11017,7 +13703,6 @@ pub struct FieldOrDatumDefWithConditionStringFieldDefString {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -11098,7 +13783,6 @@ pub struct FieldOrDatumDefWithConditionStringFieldDefString {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
@@ -11110,10 +13794,9 @@ pub struct FieldOrDatumDefWithConditionStringFieldDefString {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -11204,6 +13887,14 @@ pub struct FieldOrDatumDefWithConditionStringFieldDefString {
     pub value: Option<Box<Color>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum FieldOrDatumDefWithConditionStringFieldDefStringCondition {
+    FluffyConditionalPExprRef(FluffyConditionalPExprRef),
+    FluffyConditionalValueDefStringExprRefArray(Vec<FluffyConditionalValueDefStringExprRef>),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct FluffyConditionalValueDefStringExprRef {
@@ -11228,7 +13919,9 @@ pub struct FluffyConditionalValueDefStringExprRef {
     pub param: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct FluffyConditionalPExprRef {
     /// Predicate for triggering the condition
@@ -11263,7 +13956,6 @@ pub struct FluffyConditionalPExprRef {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -11369,10 +14061,9 @@ pub struct FluffyConditionalPExprRef {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -11469,7 +14160,9 @@ pub struct FluffyConditionalPExprRef {
 /// The URL of an image mark.
 ///
 /// A FieldDef with Condition<ValueDef> {   condition: {value: ...},   field: ...,   ... }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct UrlClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -11485,7 +14178,6 @@ pub struct UrlClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -11566,7 +14258,6 @@ pub struct UrlClass {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
@@ -11578,10 +14269,9 @@ pub struct UrlClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -11686,7 +14376,9 @@ pub struct UrlClass {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct XClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -11712,7 +14404,6 @@ pub struct XClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -11843,10 +14534,9 @@ pub struct XClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -11941,13 +14631,14 @@ pub struct XClass {
     pub value: Option<Latitude2Value>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Axis {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<CornerRadiusUnion>,
@@ -11961,27 +14652,21 @@ pub struct Axis {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain: Option<bool>,
-    #[serde(rename = "domainCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_cap: Option<Cap>,
-    #[serde(rename = "domainColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_color: Option<Box<Color>>,
-    #[serde(rename = "domainDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "domainDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "domainOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "domainWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_width: Option<CornerRadiusUnion>,
@@ -12015,7 +14700,6 @@ pub struct Axis {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
@@ -12027,47 +14711,36 @@ pub struct Axis {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid: Option<bool>,
-    #[serde(rename = "gridCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_cap: Option<Cap>,
-    #[serde(rename = "gridColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_color: Option<GridColorUnion>,
-    #[serde(rename = "gridDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_dash: Option<AxisGridDash>,
-    #[serde(rename = "gridDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_dash_offset: Option<GridDashOffsetUnion>,
-    #[serde(rename = "gridOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_opacity: Option<GridOpacityUnion>,
-    #[serde(rename = "gridWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_width: Option<GridWidthUnion>,
-    #[serde(rename = "labelAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_align: Option<ConditionalAxisPropertyAlignNull>,
-    #[serde(rename = "labelAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_angle: Option<LabelAngle>,
-    #[serde(rename = "labelBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_baseline: Option<PurpleTextBaseline>,
-    #[serde(rename = "labelBound")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_bound: Option<Label>,
-    #[serde(rename = "labelColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_color: Option<GridColorUnion>,
@@ -12075,7 +14748,6 @@ pub struct Axis {
     ///
     /// __Note:__ The label text and value can be assessed via the `label` and `value` properties
     /// of the axis's backing `datum` object.
-    #[serde(rename = "labelExpr")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_expr: Option<String>,
@@ -12088,43 +14760,33 @@ pub struct Axis {
     /// can sometimes help the labels better visually group with corresponding axis ticks.
     ///
     /// __Default value:__ `true` for axis of a continuous x-scale. Otherwise, `false`.
-    #[serde(rename = "labelFlush")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_flush: Option<LabelFlush>,
-    #[serde(rename = "labelFlushOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_flush_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font: Option<ConditionalAxisPropertyStringNull>,
-    #[serde(rename = "labelFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_size: Option<GridWidthUnion>,
-    #[serde(rename = "labelFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_style: Option<ConditionalAxisPropertyFontStyleNull>,
-    #[serde(rename = "labelFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_weight: Option<FontWeight>,
-    #[serde(rename = "labelLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_line_height: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_offset: Option<GridDashOffsetUnion>,
-    #[serde(rename = "labelOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_opacity: Option<GridDashOffsetUnion>,
@@ -12136,11 +14798,9 @@ pub struct Axis {
     ///
     /// __Default value:__ `true` for non-nominal fields with non-log scales; `"greedy"` for log
     /// scales; otherwise `false`.
-    #[serde(rename = "labelOverlap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_overlap: Option<LabelOverlapUnion>,
-    #[serde(rename = "labelPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_padding: Option<GridDashOffsetUnion>,
@@ -12150,15 +14810,12 @@ pub struct Axis {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub labels: Option<bool>,
-    #[serde(rename = "labelSeparation")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_separation: Option<CornerRadiusUnion>,
-    #[serde(rename = "maxExtent")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub max_extent: Option<CornerRadiusUnion>,
-    #[serde(rename = "minExtent")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub min_extent: Option<CornerRadiusUnion>,
@@ -12198,15 +14855,12 @@ pub struct Axis {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub style: Option<LegendText>,
-    #[serde(rename = "tickBand")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_band: Option<TickBandUnion>,
-    #[serde(rename = "tickCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_cap: Option<Cap>,
-    #[serde(rename = "tickColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_color: Option<GridColorUnion>,
@@ -12223,15 +14877,12 @@ pub struct Axis {
     ///
     /// __Default value__: Determine using a formula `ceil(width/40)` for x and `ceil(height/40)`
     /// for y.
-    #[serde(rename = "tickCount")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_count: Option<TickCount>,
-    #[serde(rename = "tickDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_dash: Option<AxisTickDash>,
-    #[serde(rename = "tickDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_dash_offset: Option<GridDashOffsetUnion>,
@@ -12239,7 +14890,6 @@ pub struct Axis {
     /// the axis. This flag is useful for styling axes for `band` scales such that ticks are
     /// placed on band boundaries rather in the middle of a band. Use in conjunction with
     /// `"bandPosition": 1` and an axis `"padding"` value of `0`.
-    #[serde(rename = "tickExtra")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_extra: Option<bool>,
@@ -12247,15 +14897,12 @@ pub struct Axis {
     /// example, a value of `1` indicates that ticks should not be less than 1 unit apart. If
     /// `tickMinStep` is specified, the `tickCount` value will be adjusted, if necessary, to
     /// enforce the minimum step value.
-    #[serde(rename = "tickMinStep")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_min_step: Option<CornerRadiusUnion>,
-    #[serde(rename = "tickOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "tickOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_opacity: Option<GridDashOffsetUnion>,
@@ -12263,7 +14910,6 @@ pub struct Axis {
     /// integer.
     ///
     /// __Default value:__ `true`
-    #[serde(rename = "tickRound")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_round: Option<bool>,
@@ -12273,11 +14919,9 @@ pub struct Axis {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ticks: Option<bool>,
-    #[serde(rename = "tickSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_size: Option<GridWidthUnion>,
-    #[serde(rename = "tickWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_width: Option<GridWidthUnion>,
@@ -12303,63 +14947,48 @@ pub struct Axis {
     #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
     #[builder(default)]
     pub title: RemovableValue<LegendText>,
-    #[serde(rename = "titleAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_align: Option<TitleAlignUnion>,
-    #[serde(rename = "titleAnchor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_anchor: Option<TitleAnchorUnion>,
-    #[serde(rename = "titleAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_angle: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_baseline: Option<TextBaseline>,
-    #[serde(rename = "titleColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_color: Option<Box<Color>>,
-    #[serde(rename = "titleFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font: Option<Box<Color>>,
-    #[serde(rename = "titleFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_size: Option<FontSize>,
-    #[serde(rename = "titleFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_style: Option<Box<Color>>,
-    #[serde(rename = "titleFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_weight: Option<FontWeightUnion>,
-    #[serde(rename = "titleLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_limit: Option<FontSize>,
-    #[serde(rename = "titleLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_line_height: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "titlePadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_padding: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleX")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_x: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleY")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_y: Option<CornerRadiusUnion>,
@@ -12379,6 +15008,51 @@ pub struct Axis {
     pub zindex: Option<f64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Cap {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(StrokeCap),
+}
+
+/// The stroke cap for line ending style. One of `"butt"`, `"round"`, or `"square"`.
+///
+/// __Default value:__ `"butt"`
+///
+/// The stroke cap for the domain line's ending style. One of `"butt"`, `"round"` or
+/// `"square"`.
+///
+/// __Default value:__ `"butt"`
+///
+/// The stroke cap for grid lines' ending style. One of `"butt"`, `"round"` or `"square"`.
+///
+/// __Default value:__ `"butt"`
+///
+/// The stroke cap for the tick lines' ending style. One of `"butt"`, `"round"` or
+/// `"square"`.
+///
+/// __Default value:__ `"butt"`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StrokeCap {
+    Butt,
+    Round,
+    Square,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum GridColorUnion {
+    GridColorExprRef(GridColorExprRef),
+    String(String),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct GridColorExprRef {
@@ -12395,6 +15069,16 @@ pub struct GridColorExprRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub value: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ConditionUnion {
+    ConditionClass(ConditionClass),
+    ConditionalPredicateValueDefColorNullExprRefArray(
+        Vec<ConditionalPredicateValueDefColorNullExprRef>,
+    ),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -12435,6 +15119,18 @@ pub struct ConditionClass {
     pub expr: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum AxisGridDash {
+    DoubleArray(Vec<f64>),
+    PurpleExprRef(PurpleExprRef),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct PurpleExprRef {
@@ -12451,6 +15147,18 @@ pub struct PurpleExprRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub value: Option<Vec<f64>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TentacledConditionalPredicateValueDefNumberNullExprRef {
+    ConditionalPredicateValueDefNumberNullExprRefArray(
+        Vec<ConditionalPredicateValueDefNumberNullExprRef>,
+    ),
+    PurpleConditionalPredicateValueDefNumberNullExprRef(
+        PurpleConditionalPredicateValueDefNumberNullExprRef,
+    ),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -12491,6 +15199,18 @@ pub struct PurpleConditionalPredicateValueDefNumberNullExprRef {
     pub expr: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum GridDashOffsetUnion {
+    Double(f64),
+    GridDashOffsetExprRef(GridDashOffsetExprRef),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct GridDashOffsetExprRef {
@@ -12507,6 +15227,18 @@ pub struct GridDashOffsetExprRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub value: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum StickyConditionalPredicateValueDefNumberNullExprRef {
+    ConditionalPredicateValueDefNumberNullExprRefElementArray(
+        Vec<ConditionalPredicateValueDefNumberNullExprRefElement>,
+    ),
+    FluffyConditionalPredicateValueDefNumberNullExprRef(
+        FluffyConditionalPredicateValueDefNumberNullExprRef,
+    ),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -12547,6 +15279,18 @@ pub struct FluffyConditionalPredicateValueDefNumberNullExprRef {
     pub expr: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum GridOpacityUnion {
+    Double(f64),
+    GridOpacityExprRef(GridOpacityExprRef),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct GridOpacityExprRef {
@@ -12565,6 +15309,18 @@ pub struct GridOpacityExprRef {
     pub value: Option<f64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum GridWidthUnion {
+    Double(f64),
+    GridWidthExprRef(GridWidthExprRef),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct GridWidthExprRef {
@@ -12583,6 +15339,18 @@ pub struct GridWidthExprRef {
     pub value: Option<f64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ConditionalAxisPropertyAlignNull {
+    Enum(Align),
+    FluffyExprRef(FluffyExprRef),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct FluffyExprRef {
@@ -12599,6 +15367,16 @@ pub struct FluffyExprRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub value: Option<Align>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ExprRefCondition {
+    ConditionCondition(ConditionCondition),
+    ConditionalPredicateValueDefAlignNullExprRefArray(
+        Vec<ConditionalPredicateValueDefAlignNullExprRef>,
+    ),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -12639,6 +15417,26 @@ pub struct ConditionCondition {
     pub expr: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum LabelAngle {
+    BackgroundExprRef(BackgroundExprRef),
+    Double(f64),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum PurpleTextBaseline {
+    Enum(Baseline),
+    TentacledExprRef(TentacledExprRef),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct TentacledExprRef {
@@ -12655,6 +15453,16 @@ pub struct TentacledExprRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub value: Option<Baseline>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ExprRefConditionUnion {
+    ConditionConditionClass(ConditionConditionClass),
+    ConditionalPredicateValueDefTextBaselineNullExprRefArray(
+        Vec<ConditionalPredicateValueDefTextBaselineNullExprRef>,
+    ),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -12695,6 +15503,52 @@ pub struct ConditionConditionClass {
     pub expr: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Label {
+    BackgroundExprRef(BackgroundExprRef),
+    Bool(bool),
+    Double(f64),
+}
+
+/// Indicates if labels should be hidden if they exceed the axis range. If `false` (the
+/// default) no bounds overlap analysis is performed. If `true`, labels will be hidden if
+/// they exceed the axis range by more than 1 pixel. If this property is a number, it
+/// specifies the pixel tolerance: the maximum amount by which a label bounding box may
+/// exceed the axis range.
+///
+/// __Default value:__ `false`.
+///
+/// Indicates if the first and last axis labels should be aligned flush with the scale range.
+/// Flush alignment for a horizontal axis will left-align the first label and right-align the
+/// last label. For vertical axes, bottom and top text baselines are applied instead. If this
+/// property is a number, it also indicates the number of pixels by which to offset the first
+/// and last labels; for example, a value of 2 will flush-align the first and last labels and
+/// also push them 2 pixels outward from the center of the axis. The additional adjustment
+/// can sometimes help the labels better visually group with corresponding axis ticks.
+///
+/// __Default value:__ `true` for axis of a continuous x-scale. Otherwise, `false`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum LabelFlush {
+    Bool(bool),
+    Double(f64),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ConditionalAxisPropertyStringNull {
+    StickyExprRef(StickyExprRef),
+    String(String),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct StickyExprRef {
@@ -12711,6 +15565,18 @@ pub struct StickyExprRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub value: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum FluffyConditionalPredicateValueDefStringNullExprRef {
+    ConditionalPredicateValueDefStringNullExprRefArray(
+        Vec<ConditionalPredicateValueDefStringNullExprRef>,
+    ),
+    PurpleConditionalPredicateValueDefStringNullExprRef(
+        PurpleConditionalPredicateValueDefStringNullExprRef,
+    ),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -12751,6 +15617,18 @@ pub struct PurpleConditionalPredicateValueDefStringNullExprRef {
     pub expr: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ConditionalAxisPropertyFontStyleNull {
+    IndigoExprRef(IndigoExprRef),
+    String(String),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct IndigoExprRef {
@@ -12767,6 +15645,18 @@ pub struct IndigoExprRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub value: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum FluffyConditionalPredicateValueDefFontStyleNullExprRef {
+    ConditionalPredicateValueDefFontStyleNullExprRefArray(
+        Vec<ConditionalPredicateValueDefFontStyleNullExprRef>,
+    ),
+    PurpleConditionalPredicateValueDefFontStyleNullExprRef(
+        PurpleConditionalPredicateValueDefFontStyleNullExprRef,
+    ),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -12807,6 +15697,19 @@ pub struct PurpleConditionalPredicateValueDefFontStyleNullExprRef {
     pub expr: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum FontWeight {
+    Double(f64),
+    Enum(FontWeightEnum),
+    IndecentExprRef(IndecentExprRef),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct IndecentExprRef {
@@ -12823,6 +15726,18 @@ pub struct IndecentExprRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub value: Option<ValueUnion>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum FluffyConditionalPredicateValueDefFontWeightNullExprRef {
+    ConditionalPredicateValueDefFontWeightNullExprRefArray(
+        Vec<ConditionalPredicateValueDefFontWeightNullExprRef>,
+    ),
+    PurpleConditionalPredicateValueDefFontWeightNullExprRef(
+        PurpleConditionalPredicateValueDefFontWeightNullExprRef,
+    ),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -12844,6 +15759,14 @@ pub struct ConditionalPredicateValueDefFontWeightNullExprRef {
     pub expr: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ValueUnion {
+    Double(f64),
+    Enum(FontWeightEnum),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct PurpleConditionalPredicateValueDefFontWeightNullExprRef {
@@ -12863,6 +15786,35 @@ pub struct PurpleConditionalPredicateValueDefFontWeightNullExprRef {
     pub expr: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TickBandUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(TickBandEnum),
+}
+
+/// For band scales, indicates if ticks and grid lines should be placed at the `"center"` of
+/// a band (default) or at the band `"extent"`s to indicate intervals
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TickBandEnum {
+    Center,
+    Extent,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum AxisTickDash {
+    DoubleArray(Vec<f64>),
+    HilariousExprRef(HilariousExprRef),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct HilariousExprRef {
@@ -12921,6 +15873,14 @@ pub struct ImputeParams {
     pub value: Option<serde_json::Value>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Keyvals {
+    AnythingArray(Vec<Option<serde_json::Value>>),
+    ImputeSequence(ImputeSequence),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ImputeSequence {
@@ -12936,6 +15896,20 @@ pub struct ImputeSequence {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stop: Option<f64>,
+}
+
+/// The imputation method to use for the field value of imputed data objects. One of
+/// `"value"`, `"mean"`, `"median"`, `"max"` or `"min"`.
+///
+/// __Default value:__  `"value"`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ImputeParamsMethod {
+    Max,
+    Mean,
+    Median,
+    Min,
+    Value,
 }
 
 /// Latitude-2 position for geographically projected ranged `"area"`, `"bar"`, `"rect"`, and
@@ -12964,7 +15938,9 @@ pub struct ImputeSequence {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct X2Class {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -12980,7 +15956,6 @@ pub struct X2Class {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -13028,10 +16003,9 @@ pub struct X2Class {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -13141,7 +16115,9 @@ pub struct X2Class {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct XErrorClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -13157,7 +16133,6 @@ pub struct XErrorClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -13205,10 +16180,9 @@ pub struct XErrorClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -13254,7 +16228,9 @@ pub struct XErrorClass {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct XError2Class {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -13270,7 +16246,6 @@ pub struct XError2Class {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -13318,10 +16293,9 @@ pub struct XError2Class {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -13358,7 +16332,9 @@ pub struct XError2Class {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct XOffsetClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -13374,7 +16350,6 @@ pub struct XOffsetClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -13470,10 +16445,9 @@ pub struct XOffsetClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -13582,7 +16556,9 @@ pub struct XOffsetClass {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct YClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -13608,7 +16584,6 @@ pub struct YClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -13739,10 +16714,9 @@ pub struct YClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -13863,7 +16837,9 @@ pub struct YClass {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Y2Class {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -13879,7 +16855,6 @@ pub struct Y2Class {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -13927,10 +16902,9 @@ pub struct Y2Class {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -14040,7 +17014,9 @@ pub struct Y2Class {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct YErrorClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -14056,7 +17032,6 @@ pub struct YErrorClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -14104,10 +17079,9 @@ pub struct YErrorClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -14153,7 +17127,9 @@ pub struct YErrorClass {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct YError2Class {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -14169,7 +17145,6 @@ pub struct YError2Class {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -14217,10 +17192,9 @@ pub struct YError2Class {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -14257,7 +17231,9 @@ pub struct YError2Class {
 ///
 /// Definition object for a constant value (primitive value or gradient definition) of an
 /// encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct YOffsetClass {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -14273,7 +17249,6 @@ pub struct YOffsetClass {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -14369,10 +17344,9 @@ pub struct YOffsetClass {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -14475,7 +17449,9 @@ pub struct YOffsetClass {
 /// A field definition for the horizontal facet of trellis plots.
 ///
 /// A field definition for the vertical facet of trellis plots.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Facet {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -14491,7 +17467,6 @@ pub struct Facet {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -14568,10 +17543,9 @@ pub struct Facet {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -14667,7 +17641,9 @@ pub struct Facet {
 /// A field definition for the horizontal facet of trellis plots.
 ///
 /// A field definition for the vertical facet of trellis plots.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct FacetFieldDef {
     /// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
@@ -14683,7 +17659,6 @@ pub struct FacetFieldDef {
     /// Relative position on a band of a stacked, binned, time unit, or band scale. For example,
     /// the marks will be positioned at the beginning of the band if set to `0`, and at the
     /// middle of the band if set to `0.5`.
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<f64>,
@@ -14760,10 +17735,9 @@ pub struct FacetFieldDef {
     ///
     /// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
     /// documentation.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<LogicalNotPredicateTimeUnit>,
     /// A title for the field. If `null`, the title will be removed.
     ///
     /// __Default value:__  derived from the field's name and transformation function
@@ -14848,6 +17822,15 @@ pub struct FacetFieldDef {
     pub facet_field_def_type: Option<StandardType>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum SpecHeight {
+    Double(f64),
+    Enum(HeightEnum),
+    Step(Box<Step>),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Step {
@@ -14863,8 +17846,21 @@ pub struct Step {
     pub step: Option<f64>,
 }
 
-/// A specification of the view that gets repeated.
-///
+/// Whether to apply the step to position scale or offset scale when there are both `x` and
+/// `xOffset` or both `y` and `yOffset` encodings.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StepFor {
+    Offset,
+    Position,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HeightEnum {
+    Container,
+}
+
 /// A full layered plot specification, which may contains `encoding` and `projection`
 /// properties that will be applied to underlying unit (single-view) specifications.
 ///
@@ -14984,7 +17980,9 @@ pub struct LayerSpec {
 /// underlying layers.
 ///
 /// A key-value mapping between encoding channels and definition of fields.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct LayerEncoding {
     /// Rotation angle of point and text marks.
@@ -15032,7 +18030,6 @@ pub struct LayerEncoding {
     /// __Default value:__ If undefined, the default opacity depends on [mark
     /// config](https://vega.github.io/vega-lite/docs/config.html#mark-config)'s `fillOpacity`
     /// property.
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<FillOpacityClass>,
@@ -15134,7 +18131,6 @@ pub struct LayerEncoding {
     /// Stroke dash of the marks.
     ///
     /// __Default value:__ `[1,0]` (No dash).
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<MarkPropDefNumber>,
@@ -15143,7 +18139,6 @@ pub struct LayerEncoding {
     /// __Default value:__ If undefined, the default opacity depends on [mark
     /// config](https://vega.github.io/vega-lite/docs/config.html#mark-config)'s `strokeOpacity`
     /// property.
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<StrokeOpacityClass>,
@@ -15152,7 +18147,6 @@ pub struct LayerEncoding {
     /// __Default value:__ If undefined, the default stroke width depends on [mark
     /// config](https://vega.github.io/vega-lite/docs/config.html#mark-config)'s `strokeWidth`
     /// property.
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<StrokeWidthClass>,
@@ -15173,6 +18167,9 @@ pub struct LayerEncoding {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta2: Option<Theta2Class>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<TimeFieldDef>,
     /// The tooltip text to show upon mouse hover. Specifying `tooltip` encoding overrides [the
     /// `tooltip` property in the mark
     /// definition](https://vega.github.io/vega-lite/docs/mark.html#mark-def).
@@ -15202,17 +18199,14 @@ pub struct LayerEncoding {
     #[builder(default)]
     pub x2: Option<X2Class>,
     /// Error value of x coordinates for error specified `"errorbar"` and `"errorband"`.
-    #[serde(rename = "xError")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_error: Option<XErrorClass>,
     /// Secondary error value of x coordinates for error specified `"errorbar"` and `"errorband"`.
-    #[serde(rename = "xError2")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_error2: Option<XError2Class>,
     /// Offset of x-position of the marks
-    #[serde(rename = "xOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_offset: Option<XOffsetClass>,
@@ -15232,23 +18226,33 @@ pub struct LayerEncoding {
     #[builder(default)]
     pub y2: Option<Y2Class>,
     /// Error value of y coordinates for error specified `"errorbar"` and `"errorband"`.
-    #[serde(rename = "yError")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y_error: Option<YErrorClass>,
     /// Secondary error value of y coordinates for error specified `"errorbar"` and `"errorband"`.
-    #[serde(rename = "yError2")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y_error2: Option<YError2Class>,
     /// Offset of y-position of the marks
-    #[serde(rename = "yOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y_offset: Option<YOffsetClass>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+/// A string describing the mark type (one of `"bar"`, `"circle"`, `"square"`, `"tick"`,
+/// `"line"`, `"area"`, `"point"`, `"rule"`, `"geoshape"`, and `"text"`) or a [mark
+/// definition object](https://vega.github.io/vega-lite/docs/mark.html#mark-def).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum AnyMark {
+    Def(Def),
+    Enum(Mark),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Def {
     #[serde(rename = "box")]
@@ -15260,7 +18264,7 @@ pub struct Def {
     /// Whether a mark be clipped to the enclosing group’s width and height.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub clip: Option<bool>,
+    pub clip: Option<Aria>,
     /// Default color.
     ///
     /// __Default value:__ <span style="color: #4682b4;">&#9632;</span> `"#4682b4"`
@@ -15283,7 +18287,7 @@ pub struct Def {
     /// __Default value:__ `1.5`.
     ///
     /// The extent of the rule. Available options include:
-    /// - `"ci"`: Extend the rule to the confidence interval of the mean.
+    /// - `"ci"`: Extend the rule to the 95% bootstrapped confidence interval of the mean.
     /// - `"stderr"`: The size of rule are set to the value of standard error, extending from the
     /// mean.
     /// - `"stdev"`: The size of rule are set to the value of standard deviation, extending from
@@ -15293,7 +18297,7 @@ pub struct Def {
     /// __Default value:__ `"stderr"`.
     ///
     /// The extent of the band. Available options include:
-    /// - `"ci"`: Extend the band to the confidence interval of the mean.
+    /// - `"ci"`: Extend the band to the 95% bootstrapped confidence interval of the mean.
     /// - `"stderr"`: The size of band are set to the value of standard error, extending from the
     /// mean.
     /// - `"stdev"`: The size of band are set to the value of standard deviation, extending from
@@ -15304,14 +18308,38 @@ pub struct Def {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub extent: Option<MarkDefExtent>,
-    /// Defines how Vega-Lite should handle marks for invalid values (`null` and `NaN`).
-    /// - If set to `"filter"` (default), all data items with null values will be skipped (for
-    /// line, trail, and area marks) or filtered (for other marks).
-    /// - If `null`, all data items are included. In this case, invalid values will be
-    /// interpreted as zeroes.
-    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    /// Invalid data mode, which defines how the marks and corresponding scales should represent
+    /// invalid values (`null` and `NaN` in continuous scales *without* defined output for
+    /// invalid values).
+    ///
+    /// - `"filter"` — *Exclude* all invalid values from the visualization's *marks* and
+    /// *scales*. For path marks (for line, area, trail), this option will create paths that
+    /// connect valid points, as if the data rows with invalid values do not exist.
+    ///
+    /// - `"break-paths-filter-domains"` — Break path marks (for line, area, trail) at invalid
+    /// values.  For non-path marks, this is equivalent to `"filter"`. All *scale* domains will
+    /// *exclude* these filtered data points.
+    ///
+    /// - `"break-paths-show-domains"` — Break paths (for line, area, trail) at invalid values.
+    /// Hide invalid values for non-path marks. All *scale* domains will *include* these filtered
+    /// data points (for both path and non-path marks).
+    ///
+    /// - `"show"` or `null` — Show all data points in the marks and scale domains. Each scale
+    /// will use the output for invalid values defined in `config.scale.invalid` or, if
+    /// unspecified, by default invalid values will produce the same visual values as zero (if
+    /// the scale includes zero) or the minimum value (if the scale does not include zero).
+    ///
+    /// - `"break-paths-show-path-domains"` (default) — This is equivalent to
+    /// `"break-paths-show-domains"` for path-based marks (line/area/trail) and `"filter"` for
+    /// non-path marks.
+    ///
+    /// __Note__: If any channel's scale has an output for invalid values defined in
+    /// `config.scale.invalid`, all values for the scales will be considered "valid" since they
+    /// can produce a reasonable output for the scales. Thus, fields for such channels will not
+    /// be filtered and will not cause path breaks.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub invalid: RemovableValue<Invalid>,
+    pub invalid: Option<MarkInvalidDataMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub median: Option<AnyMarkConfig>,
@@ -15437,11 +18465,9 @@ pub struct Def {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "ariaRole")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role: Option<Box<Color>>,
-    #[serde(rename = "ariaRoleDescription")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role_description: Option<Box<Color>>,
@@ -15452,7 +18478,6 @@ pub struct Def {
     ///
     /// __Default value:__  3/4 of step (width step for horizontal ticks and height step for
     /// vertical ticks).
-    #[serde(rename = "bandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_size: Option<f64>,
@@ -15473,7 +18498,6 @@ pub struct Def {
     /// statisticians) or 1 (Vega-Lite default, D3 example style).
     ///
     /// __Default value:__ `1`
-    #[serde(rename = "binSpacing")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub bin_spacing: Option<f64>,
@@ -15483,34 +18507,27 @@ pub struct Def {
     /// The default size of the bars on continuous scales.
     ///
     /// __Default value:__ `5`
-    #[serde(rename = "continuousBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub continuous_band_size: Option<f64>,
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_right: Option<CornerRadiusUnion>,
     /// - For vertical bars, top-left and top-right corner radius.
     ///
     /// - For horizontal bars, top-right and bottom-right corner radius.
-    #[serde(rename = "cornerRadiusEnd")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_end: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_right: Option<CornerRadiusUnion>,
@@ -15525,7 +18542,6 @@ pub struct Def {
     pub dir: Option<Dir>,
     /// The default size of the bars with discrete dimensions. If unspecified, the default size
     /// is  `step-2`, which provides 2 pixel offset between bars.
-    #[serde(rename = "discreteBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub discrete_band_size: Option<DiscreteBandSize>,
@@ -15557,22 +18573,18 @@ pub struct Def {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub filled: Option<bool>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<Opacity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font: Option<Box<Color>>,
-    #[serde(rename = "fontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_size: Option<FontSize>,
-    #[serde(rename = "fontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_style: Option<Box<Color>>,
-    #[serde(rename = "fontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_weight: Option<FontWeightUnion>,
@@ -15590,7 +18602,6 @@ pub struct Def {
     /// The inner radius in pixels of arc marks. `innerRadius` is an alias for `radius2`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "innerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub inner_radius: Option<CornerRadiusUnion>,
@@ -15609,14 +18620,16 @@ pub struct Def {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line: Option<Line>,
-    #[serde(rename = "lineBreak")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_break: Option<Box<Color>>,
-    #[serde(rename = "lineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_height: Option<CornerRadiusUnion>,
+    /// The minimum band size for bar and rectangle marks. __Default value:__ `0.25`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub min_band_size: Option<CornerRadiusUnion>,
     /// For line and trail marks, this `order` property can be set to `null` or `false` to make
     /// the lines use the original order in the data sources.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -15625,11 +18638,9 @@ pub struct Def {
     /// The outer radius in pixels of arc marks. `outerRadius` is an alias for `radius`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "outerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub outer_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "padAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub pad_angle: Option<CornerRadiusUnion>,
@@ -15665,12 +18676,10 @@ pub struct Def {
     #[builder(default)]
     pub radius2: Option<CornerRadiusUnion>,
     /// Offset for radius2.
-    #[serde(rename = "radius2Offset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub radius2_offset: Option<CornerRadiusUnion>,
     /// Offset for radius.
-    #[serde(rename = "radiusOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub radius_offset: Option<CornerRadiusUnion>,
@@ -15687,35 +18696,27 @@ pub struct Def {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke: Option<MarkConfigFill>,
-    #[serde(rename = "strokeCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_cap: Option<Cap>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeJoin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_join: Option<StrokeJoinUnion>,
-    #[serde(rename = "strokeMiterLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_miter_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<Opacity>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<FontSize>,
@@ -15750,26 +18751,25 @@ pub struct Def {
     #[builder(default)]
     pub theta2: Option<CornerRadiusUnion>,
     /// Offset for theta2.
-    #[serde(rename = "theta2Offset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta2_offset: Option<CornerRadiusUnion>,
     /// Offset for theta.
-    #[serde(rename = "thetaOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta_offset: Option<CornerRadiusUnion>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<CornerRadiusUnion>,
     /// Default relative band position for a time unit. If set to `0`, the marks will be
     /// positioned at the beginning of the time unit band step. If set to `0.5`, the marks will
     /// be positioned in the middle of the time unit band step.
-    #[serde(rename = "timeUnitBandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_position: Option<f64>,
     /// Default relative band size for a time unit. If set to `1`, the bandwidth of the marks
     /// will be equal to the time unit band step. If set to `0.5`, bandwidth of the marks will be
     /// half of the time unit band step.
-    #[serde(rename = "timeUnitBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_size: Option<f64>,
@@ -15817,12 +18817,10 @@ pub struct Def {
     #[builder(default)]
     pub x2: Option<XUnion>,
     /// Offset for x2-position.
-    #[serde(rename = "x2Offset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x2_offset: Option<CornerRadiusUnion>,
     /// Offset for x-position.
-    #[serde(rename = "xOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_offset: Option<CornerRadiusUnion>,
@@ -15842,15 +18840,29 @@ pub struct Def {
     #[builder(default)]
     pub y2: Option<YUnion>,
     /// Offset for y2-position.
-    #[serde(rename = "y2Offset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y2_offset: Option<CornerRadiusUnion>,
     /// Offset for y-position.
-    #[serde(rename = "yOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y_offset: Option<CornerRadiusUnion>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Angle {
+    BackgroundExprRef(BackgroundExprRef),
+    Double(f64),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum AnyMarkConfig {
+    Bool(bool),
+    Config(Config),
 }
 
 /// Circle-Specific Config
@@ -15890,7 +18902,9 @@ pub struct Def {
 /// Trail-Specific Config
 ///
 /// Tick-Specific Config
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Config {
     /// The horizontal alignment of the text or ranged marks (area, bar, image, rect, rule). One
@@ -15906,11 +18920,9 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "ariaRole")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role: Option<Box<Color>>,
-    #[serde(rename = "ariaRoleDescription")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role_description: Option<Box<Color>>,
@@ -15945,23 +18957,18 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub color: Option<MarkConfigColor>,
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_right: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_right: Option<CornerRadiusUnion>,
@@ -15983,7 +18990,6 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ellipsis: Option<Box<Color>>,
-    #[serde(rename = "endAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub end_angle: Option<CornerRadiusUnion>,
@@ -16006,22 +19012,18 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub filled: Option<bool>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<Opacity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font: Option<Box<Color>>,
-    #[serde(rename = "fontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_size: Option<FontSize>,
-    #[serde(rename = "fontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_style: Option<Box<Color>>,
-    #[serde(rename = "fontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_weight: Option<FontWeightUnion>,
@@ -16034,29 +19036,50 @@ pub struct Config {
     /// The inner radius in pixels of arc marks. `innerRadius` is an alias for `radius2`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "innerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub inner_radius: Option<CornerRadiusUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub interpolate: Option<MarkConfigInterpolate>,
-    /// Defines how Vega-Lite should handle marks for invalid values (`null` and `NaN`).
-    /// - If set to `"filter"` (default), all data items with null values will be skipped (for
-    /// line, trail, and area marks) or filtered (for other marks).
-    /// - If `null`, all data items are included. In this case, invalid values will be
-    /// interpreted as zeroes.
-    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    /// Invalid data mode, which defines how the marks and corresponding scales should represent
+    /// invalid values (`null` and `NaN` in continuous scales *without* defined output for
+    /// invalid values).
+    ///
+    /// - `"filter"` — *Exclude* all invalid values from the visualization's *marks* and
+    /// *scales*. For path marks (for line, area, trail), this option will create paths that
+    /// connect valid points, as if the data rows with invalid values do not exist.
+    ///
+    /// - `"break-paths-filter-domains"` — Break path marks (for line, area, trail) at invalid
+    /// values.  For non-path marks, this is equivalent to `"filter"`. All *scale* domains will
+    /// *exclude* these filtered data points.
+    ///
+    /// - `"break-paths-show-domains"` — Break paths (for line, area, trail) at invalid values.
+    /// Hide invalid values for non-path marks. All *scale* domains will *include* these filtered
+    /// data points (for both path and non-path marks).
+    ///
+    /// - `"show"` or `null` — Show all data points in the marks and scale domains. Each scale
+    /// will use the output for invalid values defined in `config.scale.invalid` or, if
+    /// unspecified, by default invalid values will produce the same visual values as zero (if
+    /// the scale includes zero) or the minimum value (if the scale does not include zero).
+    ///
+    /// - `"break-paths-show-path-domains"` (default) — This is equivalent to
+    /// `"break-paths-show-domains"` for path-based marks (line/area/trail) and `"filter"` for
+    /// non-path marks.
+    ///
+    /// __Note__: If any channel's scale has an output for invalid values defined in
+    /// `config.scale.invalid`, all values for the scales will be considered "valid" since they
+    /// can produce a reasonable output for the scales. Thus, fields for such channels will not
+    /// be filtered and will not cause path breaks.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub invalid: RemovableValue<Invalid>,
+    pub invalid: Option<MarkInvalidDataMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "lineBreak")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_break: Option<Box<Color>>,
-    #[serde(rename = "lineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_height: Option<CornerRadiusUnion>,
@@ -16087,11 +19110,9 @@ pub struct Config {
     /// The outer radius in pixels of arc marks. `outerRadius` is an alias for `radius`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "outerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub outer_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "padAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub pad_angle: Option<CornerRadiusUnion>,
@@ -16131,7 +19152,6 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub smooth: Option<Aria>,
-    #[serde(rename = "startAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub start_angle: Option<CornerRadiusUnion>,
@@ -16142,35 +19162,27 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke: Option<MarkConfigFill>,
-    #[serde(rename = "strokeCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_cap: Option<Cap>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeJoin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_join: Option<StrokeJoinUnion>,
-    #[serde(rename = "strokeMiterLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_miter_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<Opacity>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<FontSize>,
@@ -16193,17 +19205,18 @@ pub struct Config {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta2: Option<CornerRadiusUnion>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<CornerRadiusUnion>,
     /// Default relative band position for a time unit. If set to `0`, the marks will be
     /// positioned at the beginning of the time unit band step. If set to `0.5`, the marks will
     /// be positioned in the middle of the time unit band step.
-    #[serde(rename = "timeUnitBandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_position: Option<f64>,
     /// Default relative band size for a time unit. If set to `1`, the bandwidth of the marks
     /// will be equal to the time unit band step. If set to `0.5`, bandwidth of the marks will be
     /// half of the time unit band step.
-    #[serde(rename = "timeUnitBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_size: Option<f64>,
@@ -16291,35 +19304,34 @@ pub struct Config {
     /// statisticians) or 1 (Vega-Lite default, D3 example style).
     ///
     /// __Default value:__ `1`
-    #[serde(rename = "binSpacing")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub bin_spacing: Option<f64>,
     /// The default size of the bars on continuous scales.
     ///
     /// __Default value:__ `5`
-    #[serde(rename = "continuousBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub continuous_band_size: Option<f64>,
     /// - For vertical bars, top-left and top-right corner radius.
     ///
     /// - For horizontal bars, top-right and bottom-right corner radius.
-    #[serde(rename = "cornerRadiusEnd")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_end: Option<CornerRadiusUnion>,
     /// The default size of the bars with discrete dimensions. If unspecified, the default size
     /// is  `step-2`, which provides 2 pixel offset between bars.
-    #[serde(rename = "discreteBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub discrete_band_size: Option<DiscreteBandSize>,
+    /// The minimum band size for bar and rectangle marks. __Default value:__ `0.25`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub min_band_size: Option<CornerRadiusUnion>,
     /// The width of the ticks.
     ///
     /// __Default value:__  3/4 of step (width step for horizontal ticks and height step for
     /// vertical ticks).
-    #[serde(rename = "bandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_size: Option<f64>,
@@ -16331,6 +19343,59 @@ pub struct Config {
     pub thickness: Option<f64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum BlendUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(BlendEnum),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum BlendEnum {
+    Color,
+    #[serde(rename = "color-burn")]
+    ColorBurn,
+    #[serde(rename = "color-dodge")]
+    ColorDodge,
+    Darken,
+    Difference,
+    Exclusion,
+    #[serde(rename = "hard-light")]
+    HardLight,
+    Hue,
+    Lighten,
+    Luminosity,
+    Multiply,
+    Overlay,
+    Saturation,
+    Screen,
+    #[serde(rename = "soft-light")]
+    SoftLight,
+}
+
+/// Default color.
+///
+/// __Default value:__ <span style="color: #4682b4;">&#9632;</span> `"#4682b4"`
+///
+/// __Note:__
+/// - This property cannot be used in a [style
+/// config](https://vega.github.io/vega-lite/docs/mark.html#style-config).
+/// - The `fill` and `stroke` properties have higher precedence than `color` and will
+/// override `color`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum MarkConfigColor {
+    ColorLinearGradient(ColorLinearGradient),
+    String(String),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ColorLinearGradient {
@@ -16411,6 +19476,111 @@ pub struct ColorLinearGradient {
     pub expr: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum CursorUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(Cursor),
+}
+
+/// The mouse cursor used over the mark. Any valid [CSS cursor
+/// type](https://developer.mozilla.org/en-US/docs/Web/CSS/cursor#Values) can be used.
+///
+/// The mouse cursor used over the interval mark. Any valid [CSS cursor
+/// type](https://developer.mozilla.org/en-US/docs/Web/CSS/cursor#Values) can be used.
+///
+/// The mouse cursor used over the view. Any valid [CSS cursor
+/// type](https://developer.mozilla.org/en-US/docs/Web/CSS/cursor#Values) can be used.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Cursor {
+    Alias,
+    #[serde(rename = "all-scroll")]
+    AllScroll,
+    Auto,
+    Cell,
+    #[serde(rename = "col-resize")]
+    ColResize,
+    #[serde(rename = "context-menu")]
+    ContextMenu,
+    Copy,
+    Crosshair,
+    Default,
+    #[serde(rename = "e-resize")]
+    EResize,
+    #[serde(rename = "ew-resize")]
+    EwResize,
+    Grab,
+    Grabbing,
+    Help,
+    Move,
+    #[serde(rename = "n-resize")]
+    NResize,
+    #[serde(rename = "ne-resize")]
+    NeResize,
+    #[serde(rename = "nesw-resize")]
+    NeswResize,
+    #[serde(rename = "no-drop")]
+    NoDrop,
+    None,
+    #[serde(rename = "not-allowed")]
+    NotAllowed,
+    #[serde(rename = "ns-resize")]
+    NsResize,
+    #[serde(rename = "nw-resize")]
+    NwResize,
+    #[serde(rename = "nwse-resize")]
+    NwseResize,
+    Pointer,
+    Progress,
+    #[serde(rename = "row-resize")]
+    RowResize,
+    #[serde(rename = "s-resize")]
+    SResize,
+    #[serde(rename = "se-resize")]
+    SeResize,
+    #[serde(rename = "sw-resize")]
+    SwResize,
+    Text,
+    #[serde(rename = "vertical-text")]
+    VerticalText,
+    #[serde(rename = "w-resize")]
+    WResize,
+    Wait,
+    #[serde(rename = "zoom-in")]
+    ZoomIn,
+    #[serde(rename = "zoom-out")]
+    ZoomOut,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Dir {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(TextDirection),
+}
+
+/// The direction of the text. One of `"ltr"` (left-to-right) or `"rtl"` (right-to-left).
+/// This property determines on which side is truncated in response to the limit parameter.
+///
+/// __Default value:__ `"ltr"`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TextDirection {
+    Ltr,
+    Rtl,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum DiscreteBandSize {
+    Double(f64),
+    RelativeBandSize(RelativeBandSize),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct RelativeBandSize {
@@ -16420,6 +19590,18 @@ pub struct RelativeBandSize {
     pub band: Option<f64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum MarkConfigFill {
+    FillLinearGradient(FillLinearGradient),
+    String(String),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct FillLinearGradient {
@@ -16500,7 +19682,113 @@ pub struct FillLinearGradient {
     pub expr: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Opacity {
+    BackgroundExprRef(BackgroundExprRef),
+    Double(f64),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum MarkConfigInterpolate {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(Interpolate),
+}
+
+/// The line interpolation method to use for line and area marks. One of the following:
+/// - `"linear"`: piecewise linear segments, as in a polyline.
+/// - `"linear-closed"`: close the linear segments to form a polygon.
+/// - `"step"`: alternate between horizontal and vertical segments, as in a step function.
+/// - `"step-before"`: alternate between vertical and horizontal segments, as in a step
+/// function.
+/// - `"step-after"`: alternate between horizontal and vertical segments, as in a step
+/// function.
+/// - `"basis"`: a B-spline, with control point duplication on the ends.
+/// - `"basis-open"`: an open B-spline; may not intersect the start or end.
+/// - `"basis-closed"`: a closed B-spline, as in a loop.
+/// - `"cardinal"`: a Cardinal spline, with control point duplication on the ends.
+/// - `"cardinal-open"`: an open Cardinal spline; may not intersect the start or end, but
+/// will intersect other control points.
+/// - `"cardinal-closed"`: a closed Cardinal spline, as in a loop.
+/// - `"bundle"`: equivalent to basis, except the tension parameter is used to straighten the
+/// spline.
+/// - `"monotone"`: cubic interpolation that preserves monotonicity in y.
+///
+/// The line interpolation method for the error band. One of the following:
+/// - `"linear"`: piecewise linear segments, as in a polyline.
+/// - `"linear-closed"`: close the linear segments to form a polygon.
+/// - `"step"`: a piecewise constant function (a step function) consisting of alternating
+/// horizontal and vertical lines. The y-value changes at the midpoint of each pair of
+/// adjacent x-values.
+/// - `"step-before"`: a piecewise constant function (a step function) consisting of
+/// alternating horizontal and vertical lines. The y-value changes before the x-value.
+/// - `"step-after"`: a piecewise constant function (a step function) consisting of
+/// alternating horizontal and vertical lines. The y-value changes after the x-value.
+/// - `"basis"`: a B-spline, with control point duplication on the ends.
+/// - `"basis-open"`: an open B-spline; may not intersect the start or end.
+/// - `"basis-closed"`: a closed B-spline, as in a loop.
+/// - `"cardinal"`: a Cardinal spline, with control point duplication on the ends.
+/// - `"cardinal-open"`: an open Cardinal spline; may not intersect the start or end, but
+/// will intersect other control points.
+/// - `"cardinal-closed"`: a closed Cardinal spline, as in a loop.
+/// - `"bundle"`: equivalent to basis, except the tension parameter is used to straighten the
+/// spline.
+/// - `"monotone"`: cubic interpolation that preserves monotonicity in y.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Interpolate {
+    Basis,
+    #[serde(rename = "basis-closed")]
+    BasisClosed,
+    #[serde(rename = "basis-open")]
+    BasisOpen,
+    Bundle,
+    Cardinal,
+    #[serde(rename = "cardinal-closed")]
+    CardinalClosed,
+    #[serde(rename = "cardinal-open")]
+    CardinalOpen,
+    #[serde(rename = "catmull-rom")]
+    CatmullRom,
+    Linear,
+    #[serde(rename = "linear-closed")]
+    LinearClosed,
+    Monotone,
+    Natural,
+    Step,
+    #[serde(rename = "step-after")]
+    StepAfter,
+    #[serde(rename = "step-before")]
+    StepBefore,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MarkInvalidDataMode {
+    #[serde(rename = "break-paths-filter-domains")]
+    BreakPathsFilterDomains,
+    #[serde(rename = "break-paths-show-domains")]
+    BreakPathsShowDomains,
+    #[serde(rename = "break-paths-show-path-domains")]
+    BreakPathsShowPathDomains,
+    Filter,
+    Show,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Line {
+    Bool(bool),
+    OverlayMarkDef(OverlayMarkDef),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct OverlayMarkDef {
     /// The horizontal alignment of the text or ranged marks (area, bar, image, rect, rule). One
@@ -16516,11 +19804,9 @@ pub struct OverlayMarkDef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "ariaRole")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role: Option<Box<Color>>,
-    #[serde(rename = "ariaRoleDescription")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role_description: Option<Box<Color>>,
@@ -16546,7 +19832,7 @@ pub struct OverlayMarkDef {
     /// Whether a mark be clipped to the enclosing group’s width and height.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub clip: Option<bool>,
+    pub clip: Option<Aria>,
     /// Default color.
     ///
     /// __Default value:__ <span style="color: #4682b4;">&#9632;</span> `"#4682b4"`
@@ -16559,23 +19845,18 @@ pub struct OverlayMarkDef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub color: Option<MarkConfigColor>,
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_right: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_right: Option<CornerRadiusUnion>,
@@ -16597,7 +19878,6 @@ pub struct OverlayMarkDef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ellipsis: Option<Box<Color>>,
-    #[serde(rename = "endAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub end_angle: Option<CornerRadiusUnion>,
@@ -16620,22 +19900,18 @@ pub struct OverlayMarkDef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub filled: Option<bool>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<Opacity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font: Option<Box<Color>>,
-    #[serde(rename = "fontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_size: Option<FontSize>,
-    #[serde(rename = "fontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_style: Option<Box<Color>>,
-    #[serde(rename = "fontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_weight: Option<FontWeightUnion>,
@@ -16648,29 +19924,50 @@ pub struct OverlayMarkDef {
     /// The inner radius in pixels of arc marks. `innerRadius` is an alias for `radius2`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "innerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub inner_radius: Option<CornerRadiusUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub interpolate: Option<MarkConfigInterpolate>,
-    /// Defines how Vega-Lite should handle marks for invalid values (`null` and `NaN`).
-    /// - If set to `"filter"` (default), all data items with null values will be skipped (for
-    /// line, trail, and area marks) or filtered (for other marks).
-    /// - If `null`, all data items are included. In this case, invalid values will be
-    /// interpreted as zeroes.
-    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    /// Invalid data mode, which defines how the marks and corresponding scales should represent
+    /// invalid values (`null` and `NaN` in continuous scales *without* defined output for
+    /// invalid values).
+    ///
+    /// - `"filter"` — *Exclude* all invalid values from the visualization's *marks* and
+    /// *scales*. For path marks (for line, area, trail), this option will create paths that
+    /// connect valid points, as if the data rows with invalid values do not exist.
+    ///
+    /// - `"break-paths-filter-domains"` — Break path marks (for line, area, trail) at invalid
+    /// values.  For non-path marks, this is equivalent to `"filter"`. All *scale* domains will
+    /// *exclude* these filtered data points.
+    ///
+    /// - `"break-paths-show-domains"` — Break paths (for line, area, trail) at invalid values.
+    /// Hide invalid values for non-path marks. All *scale* domains will *include* these filtered
+    /// data points (for both path and non-path marks).
+    ///
+    /// - `"show"` or `null` — Show all data points in the marks and scale domains. Each scale
+    /// will use the output for invalid values defined in `config.scale.invalid` or, if
+    /// unspecified, by default invalid values will produce the same visual values as zero (if
+    /// the scale includes zero) or the minimum value (if the scale does not include zero).
+    ///
+    /// - `"break-paths-show-path-domains"` (default) — This is equivalent to
+    /// `"break-paths-show-domains"` for path-based marks (line/area/trail) and `"filter"` for
+    /// non-path marks.
+    ///
+    /// __Note__: If any channel's scale has an output for invalid values defined in
+    /// `config.scale.invalid`, all values for the scales will be considered "valid" since they
+    /// can produce a reasonable output for the scales. Thus, fields for such channels will not
+    /// be filtered and will not cause path breaks.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub invalid: RemovableValue<Invalid>,
+    pub invalid: Option<MarkInvalidDataMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "lineBreak")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_break: Option<Box<Color>>,
-    #[serde(rename = "lineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_height: Option<CornerRadiusUnion>,
@@ -16701,11 +19998,9 @@ pub struct OverlayMarkDef {
     /// The outer radius in pixels of arc marks. `outerRadius` is an alias for `radius`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "outerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub outer_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "padAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub pad_angle: Option<CornerRadiusUnion>,
@@ -16725,12 +20020,10 @@ pub struct OverlayMarkDef {
     #[builder(default)]
     pub radius2: Option<CornerRadiusUnion>,
     /// Offset for radius2.
-    #[serde(rename = "radius2Offset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub radius2_offset: Option<CornerRadiusUnion>,
     /// Offset for radius.
-    #[serde(rename = "radiusOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub radius_offset: Option<CornerRadiusUnion>,
@@ -16755,7 +20048,6 @@ pub struct OverlayMarkDef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub smooth: Option<Aria>,
-    #[serde(rename = "startAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub start_angle: Option<CornerRadiusUnion>,
@@ -16766,35 +20058,27 @@ pub struct OverlayMarkDef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke: Option<MarkConfigFill>,
-    #[serde(rename = "strokeCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_cap: Option<Cap>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeJoin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_join: Option<StrokeJoinUnion>,
-    #[serde(rename = "strokeMiterLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_miter_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<Opacity>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<FontSize>,
@@ -16832,26 +20116,25 @@ pub struct OverlayMarkDef {
     #[builder(default)]
     pub theta2: Option<CornerRadiusUnion>,
     /// Offset for theta2.
-    #[serde(rename = "theta2Offset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta2_offset: Option<CornerRadiusUnion>,
     /// Offset for theta.
-    #[serde(rename = "thetaOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta_offset: Option<CornerRadiusUnion>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<CornerRadiusUnion>,
     /// Default relative band position for a time unit. If set to `0`, the marks will be
     /// positioned at the beginning of the time unit band step. If set to `0.5`, the marks will
     /// be positioned in the middle of the time unit band step.
-    #[serde(rename = "timeUnitBandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_position: Option<f64>,
     /// Default relative band size for a time unit. If set to `1`, the bandwidth of the marks
     /// will be equal to the time unit band step. If set to `0.5`, bandwidth of the marks will be
     /// half of the time unit band step.
-    #[serde(rename = "timeUnitBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_size: Option<f64>,
@@ -16893,12 +20176,10 @@ pub struct OverlayMarkDef {
     #[builder(default)]
     pub x2: Option<XUnion>,
     /// Offset for x2-position.
-    #[serde(rename = "x2Offset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x2_offset: Option<CornerRadiusUnion>,
     /// Offset for x-position.
-    #[serde(rename = "xOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_offset: Option<CornerRadiusUnion>,
@@ -16918,17 +20199,48 @@ pub struct OverlayMarkDef {
     #[builder(default)]
     pub y2: Option<YUnion>,
     /// Offset for y2-position.
-    #[serde(rename = "y2Offset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y2_offset: Option<CornerRadiusUnion>,
     /// Offset for y-position.
-    #[serde(rename = "yOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y_offset: Option<CornerRadiusUnion>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum StrokeJoinUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(StrokeJoin),
+}
+
+/// The stroke line join method. One of `"miter"`, `"round"` or `"bevel"`.
+///
+/// __Default value:__ `"miter"`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StrokeJoin {
+    Bevel,
+    Miter,
+    Round,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum OverlayMarkDefTooltip {
+    Bool(bool),
+    Double(f64),
+    String(String),
+    TooltipContent(TooltipContent),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct TooltipContent {
@@ -16941,6 +20253,135 @@ pub struct TooltipContent {
     pub expr: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Content {
+    Data,
+    Encoding,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum XUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Double(f64),
+    Enum(XEnum),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum XEnum {
+    Width,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum YUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Double(f64),
+    Enum(YEnum),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum YEnum {
+    Height,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum PointUnion {
+    Bool(bool),
+    Enum(PointEnum),
+    OverlayMarkDef(OverlayMarkDef),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PointEnum {
+    Transparent,
+}
+
+/// The mark type. This could a primitive mark type (one of `"bar"`, `"circle"`, `"square"`,
+/// `"tick"`, `"line"`, `"area"`, `"point"`, `"geoshape"`, `"rule"`, and `"text"`) or a
+/// composite mark type (`"boxplot"`, `"errorband"`, `"errorbar"`).
+///
+/// All types of primitive marks.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Mark {
+    Arc,
+    Area,
+    Bar,
+    Boxplot,
+    Circle,
+    Errorband,
+    Errorbar,
+    Geoshape,
+    Image,
+    Line,
+    Point,
+    Rect,
+    Rule,
+    Square,
+    Text,
+    Tick,
+    Trail,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum MarkDefExtent {
+    Double(f64),
+    Enum(ExtentExtent),
+}
+
+/// The extent of the band. Available options include:
+/// - `"ci"`: Extend the band to the 95% bootstrapped confidence interval of the mean.
+/// - `"stderr"`: The size of band are set to the value of standard error, extending from the
+/// mean.
+/// - `"stdev"`: The size of band are set to the value of standard deviation, extending from
+/// the mean.
+/// - `"iqr"`: Extend the band to the q1 and q3.
+///
+/// __Default value:__ `"stderr"`.
+///
+/// The extent of the rule. Available options include:
+/// - `"ci"`: Extend the rule to the 95% bootstrapped confidence interval of the mean.
+/// - `"stderr"`: The size of rule are set to the value of standard error, extending from the
+/// mean.
+/// - `"stdev"`: The size of rule are set to the value of standard deviation, extending from
+/// the mean.
+/// - `"iqr"`: Extend the rule to the q1 and q3.
+///
+/// __Default value:__ `"stderr"`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExtentExtent {
+    Ci,
+    Iqr,
+    #[serde(rename = "min-max")]
+    MinMax,
+    Stderr,
+    Stdev,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum BoxPlotDefHeight {
+    Double(f64),
+    RelativeBandSizeClass(RelativeBandSizeClass),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct RelativeBandSizeClass {
@@ -16997,6 +20438,45 @@ pub struct SelectionParameter {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub value: Option<ParamValue>,
+}
+
+/// When set, a selection is populated by input elements (also known as dynamic query
+/// widgets) or by interacting with the corresponding legend. Direct manipulation interaction
+/// is disabled by default; to re-enable it, set the selection's
+/// [`on`](https://vega.github.io/vega-lite/docs/selection.html#common-selection-properties)
+/// property.
+///
+/// Legend bindings are restricted to selections that only specify a single field or
+/// encoding.
+///
+/// Query widget binding takes the form of Vega's [input element binding
+/// definition](https://vega.github.io/vega/docs/signals/#bind) or can be a mapping between
+/// projected field/encodings and binding definitions.
+///
+/// __See also:__ [`bind`](https://vega.github.io/vega-lite/docs/bind.html) documentation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ParamBind {
+    Enum(LegendBinding),
+    UnionMap(HashMap<String, PurpleStream>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LegendBinding {
+    Legend,
+    Scales,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum PurpleStream {
+    AnythingArray(Vec<Option<serde_json::Value>>),
+    Double(f64),
+    PurpleBinding(PurpleBinding),
+    String(String),
 }
 
 /// Binds the parameter to an external input element such as a slider, selection list or
@@ -17141,9 +20621,56 @@ pub struct Stream {
     pub merge: Option<Vec<Stream>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MarkType {
+    Arc,
+    Area,
+    Group,
+    Image,
+    Line,
+    Path,
+    Rect,
+    Rule,
+    Shape,
+    Symbol,
+    Text,
+    Trail,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Source {
+    Scope,
+    View,
+    Window,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ElementUnion {
+    ElementClass(ElementClass),
+    String(String),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ElementClass {}
+
+/// Determines the default event processing and data query for the selection. Vega-Lite
+/// currently supports two selection types:
+///
+/// - `"point"` -- to select multiple discrete data values; the first value is selected on
+/// `click` and additional values toggled on shift-click.
+/// - `"interval"` -- to select a continuous range of data values on `drag`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ParamSelect {
+    Enum(SelectionType),
+    SelectionConfig(SelectionConfig),
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
@@ -17264,8 +20791,8 @@ pub struct SelectionConfig {
     /// and end event to trigger continuous panning. Discrete panning (e.g., pressing the
     /// left/right arrow keys) will be supported in future versions.
     ///
-    /// __Default value:__ `true`, which corresponds to `[mousedown, window:mouseup] >
-    /// window:mousemove!`. This default allows users to clicks and drags within an interval
+    /// __Default value:__ `true`, which corresponds to `[pointerdown, window:pointerup] >
+    /// window:pointermove!`. This default allows users to clicks and drags within an interval
     /// selection to reposition it.
     ///
     /// __See also:__ [`translate`
@@ -17289,6 +20816,15 @@ pub struct SelectionConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub zoom: Option<Toggle>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ClearUnion {
+    Bool(bool),
+    ClearDerivedStream(ClearDerivedStream),
+    String(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -17335,7 +20871,9 @@ pub struct ClearDerivedStream {
 ///
 /// __See also:__ [`mark`
 /// examples](https://vega.github.io/vega-lite/docs/selection.html#mark) in the documentation.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct BrushConfig {
     /// The mouse cursor used over the interval mark. Any valid [CSS cursor
@@ -17352,7 +20890,6 @@ pub struct BrushConfig {
     /// The fill opacity of the interval mark (a value between `0` and `1`).
     ///
     /// __Default value:__ `0.125`
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<f64>,
@@ -17363,25 +20900,29 @@ pub struct BrushConfig {
     #[builder(default)]
     pub stroke: Option<String>,
     /// An array of alternating stroke and space lengths, for creating dashed or dotted lines.
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<Vec<f64>>,
     /// The offset (in pixels) with which to begin drawing the stroke dash array.
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<f64>,
     /// The stroke opacity of the interval mark (a value between `0` and `1`).
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<f64>,
     /// The stroke width of the interval mark.
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum OnUnion {
+    OnDerivedStream(OnDerivedStream),
+    String(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -17423,6 +20964,130 @@ pub struct OnDerivedStream {
     pub merge: Option<Vec<Stream>>,
 }
 
+/// With layered and multi-view displays, a strategy that determines how selections' data
+/// queries are resolved when applied in a filter transform, conditional encoding rule, or
+/// scale domain.
+///
+/// One of:
+/// - `"global"` -- only one brush exists for the entire SPLOM. When the user begins to drag,
+/// any previous brushes are cleared, and a new one is constructed.
+/// - `"union"` -- each cell contains its own brush, and points are highlighted if they lie
+/// within _any_ of these individual brushes.
+/// - `"intersect"` -- each cell contains its own brush, and points are highlighted only if
+/// they fall within _all_ of these individual brushes.
+///
+/// __Default value:__ `global`.
+///
+/// __See also:__ [`resolve`
+/// examples](https://vega.github.io/vega-lite/docs/selection.html#resolve) in the
+/// documentation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SelectionResolution {
+    Global,
+    Intersect,
+    Union,
+}
+
+/// Determines the default event processing and data query for the selection. Vega-Lite
+/// currently supports two selection types:
+///
+/// - `"point"` -- to select multiple discrete data values; the first value is selected on
+/// `click` and additional values toggled on shift-click.
+/// - `"interval"` -- to select a continuous range of data values on `drag`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SelectionType {
+    Interval,
+    Point,
+}
+
+/// Controls whether data values should be toggled (inserted or removed from a point
+/// selection) or only ever inserted into point selections.
+///
+/// One of:
+/// - `true` -- the default behavior, which corresponds to `"event.shiftKey"`.  As a result,
+/// data values are toggled when the user interacts with the shift-key pressed.
+/// - `false` -- disables toggling behaviour; the selection will only ever contain a single
+/// data value corresponding to the most recent interaction.
+/// - A [Vega expression](https://vega.github.io/vega/docs/expressions/) which is
+/// re-evaluated as the user interacts. If the expression evaluates to `true`, the data value
+/// is toggled into or out of the point selection. If the expression evaluates to `false`,
+/// the point selection is first cleared, and the data value is then inserted. For example,
+/// setting the value to the Vega expression `"true"` will toggle data values without the
+/// user pressing the shift-key.
+///
+/// __Default value:__ `true`
+///
+/// __See also:__ [`toggle`
+/// examples](https://vega.github.io/vega-lite/docs/selection.html#toggle) in the
+/// documentation.
+///
+/// When truthy, allows a user to interactively move an interval selection back-and-forth.
+/// Can be `true`, `false` (to disable panning), or a [Vega event stream
+/// definition](https://vega.github.io/vega/docs/event-streams/) which must include a start
+/// and end event to trigger continuous panning. Discrete panning (e.g., pressing the
+/// left/right arrow keys) will be supported in future versions.
+///
+/// __Default value:__ `true`, which corresponds to `[pointerdown, window:pointerup] >
+/// window:pointermove!`. This default allows users to clicks and drags within an interval
+/// selection to reposition it.
+///
+/// __See also:__ [`translate`
+/// examples](https://vega.github.io/vega-lite/docs/selection.html#translate) in the
+/// documentation.
+///
+/// When truthy, allows a user to interactively resize an interval selection. Can be `true`,
+/// `false` (to disable zooming), or a [Vega event stream
+/// definition](https://vega.github.io/vega/docs/event-streams/). Currently, only `wheel`
+/// events are supported, but custom event streams can still be used to specify filters,
+/// debouncing, and throttling. Future versions will expand the set of events that can
+/// trigger this transformation.
+///
+/// __Default value:__ `true`, which corresponds to `wheel!`. This default allows users to
+/// use the mouse wheel to resize an interval selection.
+///
+/// __See also:__ [`zoom`
+/// examples](https://vega.github.io/vega-lite/docs/selection.html#zoom) in the documentation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Toggle {
+    Bool(bool),
+    String(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ParamValue {
+    Bool(bool),
+    Double(f64),
+    String(String),
+    UnionMap(HashMap<String, DateTimeValue>),
+    UnionMapArray(Vec<HashMap<String, Option<SelectionInit>>>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum SelectionInit {
+    Bool(bool),
+    DateTime(DateTime),
+    Double(f64),
+    String(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum DateTimeValue {
+    Bool(bool),
+    Double(f64),
+    String(String),
+    UnionArray(Vec<UnionWith>),
+}
+
 /// Projection configuration, which determines default properties for all
 /// [projections](https://vega.github.io/vega-lite/docs/projection.html). For a full list of
 /// projection configuration options, please see the [corresponding section of the projection
@@ -17435,17 +21100,17 @@ pub struct OnDerivedStream {
 /// marks.
 ///
 /// An object defining properties of the geographic projection shared by underlying layers.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Projection {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub center: Option<StrokeDashUnion>,
-    #[serde(rename = "clipAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub clip_angle: Option<CornerRadiusUnion>,
-    #[serde(rename = "clipExtent")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub clip_extent: Option<ClipExtentUnion>,
@@ -17460,7 +21125,7 @@ pub struct Projection {
     pub extent: Option<ClipExtentUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub fit: Option<Fit>,
+    pub fit: Option<ProjectionFit>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fraction: Option<CornerRadiusUnion>,
@@ -17473,7 +21138,6 @@ pub struct Projection {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub parallels: Option<StrokeDashUnion>,
-    #[serde(rename = "pointRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub point_radius: Option<CornerRadiusUnion>,
@@ -17486,11 +21150,9 @@ pub struct Projection {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ratio: Option<CornerRadiusUnion>,
-    #[serde(rename = "reflectX")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub reflect_x: Option<Aria>,
-    #[serde(rename = "reflectY")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub reflect_y: Option<Aria>,
@@ -17528,6 +21190,316 @@ pub struct Projection {
     pub projection_type: Option<TypeUnion>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ClipExtentUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    DoubleArrayArray(Vec<Vec<f64>>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ProjectionFit {
+    ExprRefClass(ExprRefClass),
+    UnionArray(Vec<FitElement>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum FitElement {
+    FeatureArray(Vec<Feature>),
+    PurpleFeature(PurpleFeature),
+}
+
+/// A feature object which contains a geometry and associated properties.
+/// https://tools.ietf.org/html/rfc7946#section-3.2
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct Feature {
+    /// Bounding box of the coordinate range of the object's Geometries, Features, or Feature
+    /// Collections. https://tools.ietf.org/html/rfc7946#section-5
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub bbox: Option<Vec<f64>>,
+    /// The feature's geometry
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub geometry: Option<Geometry>,
+    /// A value that uniquely identifies this feature in a
+    /// https://tools.ietf.org/html/rfc7946#section-3.2.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub id: Option<Id>,
+    /// Properties associated with this feature.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub properties: Option<HashMap<String, Option<serde_json::Value>>>,
+    /// Specifies the type of GeoJSON object.
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub feature_type: Option<FitType>,
+}
+
+/// Specifies the type of GeoJSON object.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum FitType {
+    Feature,
+}
+
+/// The feature's geometry
+///
+/// Union of geometry objects. https://tools.ietf.org/html/rfc7946#section-3
+///
+/// Point geometry object. https://tools.ietf.org/html/rfc7946#section-3.1.2
+///
+/// MultiPoint geometry object.  https://tools.ietf.org/html/rfc7946#section-3.1.3
+///
+/// LineString geometry object. https://tools.ietf.org/html/rfc7946#section-3.1.4
+///
+/// MultiLineString geometry object. https://tools.ietf.org/html/rfc7946#section-3.1.5
+///
+/// Polygon geometry object. https://tools.ietf.org/html/rfc7946#section-3.1.6
+///
+/// MultiPolygon geometry object. https://tools.ietf.org/html/rfc7946#section-3.1.7
+///
+/// Geometry Collection https://tools.ietf.org/html/rfc7946#section-3.1.8
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct Geometry {
+    /// Bounding box of the coordinate range of the object's Geometries, Features, or Feature
+    /// Collections. https://tools.ietf.org/html/rfc7946#section-5
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub bbox: Option<Vec<f64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub coordinates: Option<Vec<Coordinate>>,
+    /// Specifies the type of GeoJSON object.
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub geometry_type: Option<GeometryType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub geometries: Option<Vec<Geometry>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Coordinate {
+    Double(f64),
+    UnionArray(Vec<CoordinateVector2Number>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum CoordinateVector2Number {
+    Double(f64),
+    UnionArray(Vec<Vector2NumberVector2Number>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Vector2NumberVector2Number {
+    Double(f64),
+    DoubleArray(Vec<f64>),
+}
+
+/// Specifies the type of GeoJSON object.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum GeometryType {
+    #[serde(rename = "GeometryCollection")]
+    GeometryCollection,
+    #[serde(rename = "LineString")]
+    LineString,
+    #[serde(rename = "MultiLineString")]
+    MultiLineString,
+    #[serde(rename = "MultiPoint")]
+    MultiPoint,
+    #[serde(rename = "MultiPolygon")]
+    MultiPolygon,
+    Point,
+    Polygon,
+}
+
+/// A value that uniquely identifies this feature in a
+/// https://tools.ietf.org/html/rfc7946#section-3.2.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Id {
+    Double(f64),
+    String(String),
+}
+
+/// A feature object which contains a geometry and associated properties.
+/// https://tools.ietf.org/html/rfc7946#section-3.2
+///
+/// A collection of feature objects.  https://tools.ietf.org/html/rfc7946#section-3.3
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct PurpleFeature {
+    /// Bounding box of the coordinate range of the object's Geometries, Features, or Feature
+    /// Collections. https://tools.ietf.org/html/rfc7946#section-5
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub bbox: Option<Vec<f64>>,
+    /// The feature's geometry
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub geometry: Option<Geometry>,
+    /// A value that uniquely identifies this feature in a
+    /// https://tools.ietf.org/html/rfc7946#section-3.2.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub id: Option<Id>,
+    /// Properties associated with this feature.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub properties: Option<HashMap<String, Option<serde_json::Value>>>,
+    /// Specifies the type of GeoJSON object.
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub feature_type: Option<FeatureType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub features: Option<Vec<FeatureGeometryGeoJsonProperties>>,
+}
+
+/// Specifies the type of GeoJSON object.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum FeatureType {
+    Feature,
+    #[serde(rename = "FeatureCollection")]
+    FeatureCollection,
+}
+
+/// A feature object which contains a geometry and associated properties.
+/// https://tools.ietf.org/html/rfc7946#section-3.2
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct FeatureGeometryGeoJsonProperties {
+    /// Bounding box of the coordinate range of the object's Geometries, Features, or Feature
+    /// Collections. https://tools.ietf.org/html/rfc7946#section-5
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub bbox: Option<Vec<f64>>,
+    /// The feature's geometry
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub geometry: Option<Geometry>,
+    /// A value that uniquely identifies this feature in a
+    /// https://tools.ietf.org/html/rfc7946#section-3.2.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub id: Option<Id>,
+    /// Properties associated with this feature.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub properties: Option<HashMap<String, Option<serde_json::Value>>>,
+    /// Specifies the type of GeoJSON object.
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub feature_geometry_geo_json_properties_type: Option<FitType>,
+}
+
+/// A feature object which contains a geometry and associated properties.
+/// https://tools.ietf.org/html/rfc7946#section-3.2
+///
+/// A collection of feature objects.  https://tools.ietf.org/html/rfc7946#section-3.3
+///
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ExprRefClass {
+    /// Bounding box of the coordinate range of the object's Geometries, Features, or Feature
+    /// Collections. https://tools.ietf.org/html/rfc7946#section-5
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub bbox: Option<Vec<f64>>,
+    /// The feature's geometry
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub geometry: Option<Geometry>,
+    /// A value that uniquely identifies this feature in a
+    /// https://tools.ietf.org/html/rfc7946#section-3.2.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub id: Option<Id>,
+    /// Properties associated with this feature.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub properties: Option<HashMap<String, Option<serde_json::Value>>>,
+    /// Specifies the type of GeoJSON object.
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub feature_type: Option<FeatureType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub features: Option<Vec<FeatureGeometryGeoJsonProperties>>,
+    /// Vega expression (which can refer to Vega-Lite parameters).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub expr: Option<String>,
+}
+
+/// The cartographic projection to use. This value is case-insensitive, for example
+/// `"albers"` and `"Albers"` indicate the same projection type. You can find all valid
+/// projection types [in the
+/// documentation](https://vega.github.io/vega-lite/docs/projection.html#projection-types).
+///
+/// __Default value:__ `equalEarth`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TypeUnion {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(ProjectionType),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ProjectionType {
+    Albers,
+    #[serde(rename = "albersUsa")]
+    AlbersUsa,
+    #[serde(rename = "azimuthalEqualArea")]
+    AzimuthalEqualArea,
+    #[serde(rename = "azimuthalEquidistant")]
+    AzimuthalEquidistant,
+    #[serde(rename = "conicConformal")]
+    ConicConformal,
+    #[serde(rename = "conicEqualArea")]
+    ConicEqualArea,
+    #[serde(rename = "conicEquidistant")]
+    ConicEquidistant,
+    #[serde(rename = "equalEarth")]
+    EqualEarth,
+    Equirectangular,
+    Gnomonic,
+    Identity,
+    Mercator,
+    #[serde(rename = "naturalEarth1")]
+    NaturalEarth1,
+    Orthographic,
+    Stereographic,
+    #[serde(rename = "transverseMercator")]
+    TransverseMercator,
+}
+
 /// Scale, axis, and legend resolutions for view composition specifications.
 ///
 /// Defines how scales, axes, and legends from different specs should be combined. Resolve is
@@ -17558,7 +21530,22 @@ pub struct AxisResolveMap {
     pub y: Option<ResolveMode>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+/// Indicates how parameters for multiple densities should be resolved. If `"independent"`,
+/// each density may have its own domain extent and dynamic number of curve sample steps. If
+/// `"shared"`, the KDE transform will ensure that all densities are defined over a shared
+/// domain and curve steps, enabling stacking.
+///
+/// __Default value:__ `"shared"`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ResolveMode {
+    Independent,
+    Shared,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct LegendResolveMap {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -17570,7 +21557,6 @@ pub struct LegendResolveMap {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill: Option<ResolveMode>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<ResolveMode>,
@@ -17586,21 +21572,23 @@ pub struct LegendResolveMap {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke: Option<ResolveMode>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<ResolveMode>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<ResolveMode>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<ResolveMode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<ResolveMode>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ScaleResolveMap {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -17612,7 +21600,6 @@ pub struct ScaleResolveMap {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill: Option<ResolveMode>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<ResolveMode>,
@@ -17631,15 +21618,12 @@ pub struct ScaleResolveMap {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke: Option<ResolveMode>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<ResolveMode>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<ResolveMode>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<ResolveMode>,
@@ -17648,21 +21632,34 @@ pub struct ScaleResolveMap {
     pub theta: Option<ResolveMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
+    pub time: Option<ResolveMode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
     pub x: Option<ResolveMode>,
-    #[serde(rename = "xOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_offset: Option<ResolveMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y: Option<ResolveMode>,
-    #[serde(rename = "yOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y_offset: Option<ResolveMode>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+/// Title for the plot.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TitleUnion {
+    String(String),
+    StringArray(Vec<String>),
+    TitleParams(Box<TitleParams>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct TitleParams {
     /// Horizontal text alignment for title text. One of `"left"`, `"center"`, or `"right"`.
@@ -17710,15 +21707,12 @@ pub struct TitleParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font: Option<Box<Color>>,
-    #[serde(rename = "fontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_size: Option<FontSize>,
-    #[serde(rename = "fontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_style: Option<Box<Color>>,
-    #[serde(rename = "fontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_weight: Option<FontWeightUnion>,
@@ -17728,7 +21722,6 @@ pub struct TitleParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub limit: Option<FontSize>,
-    #[serde(rename = "lineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_height: Option<CornerRadiusUnion>,
@@ -17749,31 +21742,24 @@ pub struct TitleParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle: Option<LegendText>,
-    #[serde(rename = "subtitleColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_color: Option<Box<Color>>,
-    #[serde(rename = "subtitleFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_font: Option<Box<Color>>,
-    #[serde(rename = "subtitleFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_font_size: Option<FontSize>,
-    #[serde(rename = "subtitleFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_font_style: Option<Box<Color>>,
-    #[serde(rename = "subtitleFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_font_weight: Option<FontWeightUnion>,
-    #[serde(rename = "subtitleLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_line_height: Option<CornerRadiusUnion>,
-    #[serde(rename = "subtitlePadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_padding: Option<CornerRadiusUnion>,
@@ -17790,7 +21776,28 @@ pub struct TitleParams {
     pub zindex: Option<f64>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TitleParamsOrient {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(TitleOrient),
+}
+
+/// Default title orientation (`"top"`, `"bottom"`, `"left"`, or `"right"`)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TitleOrient {
+    Bottom,
+    Left,
+    None,
+    Right,
+    Top,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct Transform {
     /// Array of objects that define fields to aggregate.
@@ -17911,11 +21918,13 @@ pub struct Transform {
     /// will be determined by the observed minimum and maximum values of the density value
     /// field.
     ///
+    /// The field of which to get the extent.
+    ///
     /// A [min, max] domain over the independent (x) field for the starting and ending points of
     /// the generated trend line.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub extent: Option<Vec<f64>>,
+    pub extent: Option<TransformExtent>,
     /// The maximum number of samples to take along the extent domain for plotting the density.
     ///
     /// __Default value:__ `200`
@@ -17928,6 +21937,15 @@ pub struct Transform {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub minsteps: Option<f64>,
+    /// Indicates how parameters for multiple densities should be resolved. If `"independent"`,
+    /// each density may have its own domain extent and dynamic number of curve sample steps. If
+    /// `"shared"`, the KDE transform will ensure that all densities are defined over a shared
+    /// domain and curve steps, enabling stacking.
+    ///
+    /// __Default value:__ `"shared"`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub resolve: Option<ResolveMode>,
     /// The exact number of samples to take along the extent domain for plotting the density. If
     /// specified, overrides both minsteps and maxsteps to set an exact number of uniform
     /// samples. Potentially useful in conjunction with a fixed extent to ensure consistent
@@ -17935,6 +21953,10 @@ pub struct Transform {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub steps: Option<f64>,
+    /// The output parameter produced by the extent transform.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub param: Option<String>,
     /// The `filter` property must be a predication definition, which can take one of the
     /// following forms:
     ///
@@ -18106,10 +22128,9 @@ pub struct Transform {
     #[builder(default)]
     pub regression: Option<String>,
     /// The timeUnit.
-    #[serde(rename = "timeUnit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub time_unit: Option<TimeUnitUnion>,
+    pub time_unit: Option<TransformTimeUnit>,
     /// The maximum number of data objects to include in the sample.
     ///
     /// __Default value:__ `1000`
@@ -18147,7 +22168,6 @@ pub struct Transform {
     /// operations.
     ///
     /// __Default value:__ `false`
-    #[serde(rename = "ignorePeers")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ignore_peers: Option<bool>,
@@ -18193,6 +22213,55 @@ pub struct AggregatedFieldDef {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub op: Option<AggregateOp>,
+}
+
+/// The aggregation operation to apply to the fields (e.g., `"sum"`, `"average"`, or
+/// `"count"`). See the [full list of supported aggregation
+/// operations](https://vega.github.io/vega-lite/docs/aggregate.html#ops) for more
+/// information.
+///
+/// The aggregation operation to apply (e.g., `"sum"`, `"average"` or `"count"`). See the
+/// list of all supported operations
+/// [here](https://vega.github.io/vega-lite/docs/aggregate.html#ops).
+///
+/// The aggregation operation to apply to grouped `value` field values. __Default value:__
+/// `sum`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AggregateOp {
+    Argmax,
+    Argmin,
+    Average,
+    Ci0,
+    Ci1,
+    Count,
+    Distinct,
+    Exponential,
+    Exponentialb,
+    Max,
+    Mean,
+    Median,
+    Min,
+    Missing,
+    Product,
+    Q1,
+    Q3,
+    Stderr,
+    Stdev,
+    Stdevp,
+    Sum,
+    Valid,
+    Values,
+    Variance,
+    Variancep,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TransformExtent {
+    DoubleArray(Vec<f64>),
+    String(String),
 }
 
 /// Data source or selection for secondary data reference.
@@ -18283,6 +22352,31 @@ pub struct JoinAggregateFieldDef {
     pub op: Option<AggregateOp>,
 }
 
+/// The imputation method to use for the field value of imputed data objects. One of
+/// `"value"`, `"mean"`, `"median"`, `"max"` or `"min"`.
+///
+/// __Default value:__  `"value"`
+///
+/// The functional form of the regression model. One of `"linear"`, `"log"`, `"exp"`,
+/// `"pow"`, `"quad"`, or `"poly"`.
+///
+/// __Default value:__ `"linear"`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TransformMethod {
+    Exp,
+    Linear,
+    Log,
+    Max,
+    Mean,
+    Median,
+    Min,
+    Poly,
+    Pow,
+    Quad,
+    Value,
+}
+
 /// A sort definition for transform
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
@@ -18296,6 +22390,36 @@ pub struct SortField {
     #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
     #[builder(default)]
     pub order: RemovableValue<SortOrder>,
+}
+
+/// The timeUnit.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TransformTimeUnit {
+    Enum(TimeUnit),
+    TimeUnitTransformParams(TimeUnitTransformParams),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct TimeUnitTransformParams {
+    /// If no `unit` is specified, maxbins is used to infer time units.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub maxbins: Option<f64>,
+    /// The number of steps between bins, in terms of the least significant unit provided.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub step: Option<f64>,
+    /// Defines how date-time values should be binned.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub unit: Option<TimeUnit>,
+    /// True to use UTC timezone. Equivalent to using a `utc` prefixed `TimeUnit`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub utc: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -18328,13 +22452,77 @@ pub struct WindowFieldDef {
     pub param: Option<f64>,
 }
 
+/// The window or aggregation operation to apply within a window (e.g., `"rank"`, `"lead"`,
+/// `"sum"`, `"average"` or `"count"`). See the list of all supported operations
+/// [here](https://vega.github.io/vega-lite/docs/window.html#ops).
+///
+/// The aggregation operation to apply to the fields (e.g., `"sum"`, `"average"`, or
+/// `"count"`). See the [full list of supported aggregation
+/// operations](https://vega.github.io/vega-lite/docs/aggregate.html#ops) for more
+/// information.
+///
+/// The aggregation operation to apply (e.g., `"sum"`, `"average"` or `"count"`). See the
+/// list of all supported operations
+/// [here](https://vega.github.io/vega-lite/docs/aggregate.html#ops).
+///
+/// The aggregation operation to apply to grouped `value` field values. __Default value:__
+/// `sum`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Op {
+    Argmax,
+    Argmin,
+    Average,
+    Ci0,
+    Ci1,
+    Count,
+    #[serde(rename = "cume_dist")]
+    CumeDist,
+    #[serde(rename = "dense_rank")]
+    DenseRank,
+    Distinct,
+    Exponential,
+    Exponentialb,
+    #[serde(rename = "first_value")]
+    FirstValue,
+    Lag,
+    #[serde(rename = "last_value")]
+    LastValue,
+    Lead,
+    Max,
+    Mean,
+    Median,
+    Min,
+    Missing,
+    #[serde(rename = "nth_value")]
+    NthValue,
+    Ntile,
+    #[serde(rename = "percent_rank")]
+    PercentRank,
+    Product,
+    Q1,
+    Q3,
+    Rank,
+    #[serde(rename = "row_number")]
+    RowNumber,
+    Stderr,
+    Stdev,
+    Stdevp,
+    Sum,
+    Valid,
+    Values,
+    Variance,
+    Variancep,
+}
+
 /// An object defining the view background's fill and stroke.
 ///
 /// __Default value:__ none (transparent)
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ViewBackground {
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
@@ -18349,7 +22537,6 @@ pub struct ViewBackground {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill: Option<Box<Color>>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<Opacity>,
@@ -18366,31 +22553,24 @@ pub struct ViewBackground {
     #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
     #[builder(default)]
     pub stroke: RemovableValue<Color>,
-    #[serde(rename = "strokeCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_cap: Option<Cap>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeJoin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_join: Option<StrokeJoinUnion>,
-    #[serde(rename = "strokeMiterLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_miter_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<Opacity>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<FontSize>,
@@ -18404,6 +22584,14 @@ pub struct ViewBackground {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub style: Option<LegendText>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum RepeatUnion {
+    RepeatMapping(RepeatMapping),
+    StringArray(Vec<String>),
 }
 
 /// Definition for fields to be repeated. One of: 1) An array of fields to be repeated. If
@@ -18433,7 +22621,9 @@ pub struct RepeatMapping {
 ///
 /// A shared key-value mapping between encoding channels and definition of fields in the
 /// underlying layers.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct EdEncoding {
     /// Rotation angle of point and text marks.
@@ -18491,7 +22681,6 @@ pub struct EdEncoding {
     /// __Default value:__ If undefined, the default opacity depends on [mark
     /// config](https://vega.github.io/vega-lite/docs/config.html#mark-config)'s `fillOpacity`
     /// property.
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<FillOpacityClass>,
@@ -18597,7 +22786,6 @@ pub struct EdEncoding {
     /// Stroke dash of the marks.
     ///
     /// __Default value:__ `[1,0]` (No dash).
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<MarkPropDefNumber>,
@@ -18606,7 +22794,6 @@ pub struct EdEncoding {
     /// __Default value:__ If undefined, the default opacity depends on [mark
     /// config](https://vega.github.io/vega-lite/docs/config.html#mark-config)'s `strokeOpacity`
     /// property.
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<StrokeOpacityClass>,
@@ -18615,7 +22802,6 @@ pub struct EdEncoding {
     /// __Default value:__ If undefined, the default stroke width depends on [mark
     /// config](https://vega.github.io/vega-lite/docs/config.html#mark-config)'s `strokeWidth`
     /// property.
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<StrokeWidthClass>,
@@ -18636,6 +22822,9 @@ pub struct EdEncoding {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta2: Option<Theta2Class>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<TimeFieldDef>,
     /// The tooltip text to show upon mouse hover. Specifying `tooltip` encoding overrides [the
     /// `tooltip` property in the mark
     /// definition](https://vega.github.io/vega-lite/docs/mark.html#mark-def).
@@ -18665,17 +22854,14 @@ pub struct EdEncoding {
     #[builder(default)]
     pub x2: Option<X2Class>,
     /// Error value of x coordinates for error specified `"errorbar"` and `"errorband"`.
-    #[serde(rename = "xError")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_error: Option<XErrorClass>,
     /// Secondary error value of x coordinates for error specified `"errorbar"` and `"errorband"`.
-    #[serde(rename = "xError2")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_error2: Option<XError2Class>,
     /// Offset of x-position of the marks
-    #[serde(rename = "xOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_offset: Option<XOffsetClass>,
@@ -18695,17 +22881,14 @@ pub struct EdEncoding {
     #[builder(default)]
     pub y2: Option<Y2Class>,
     /// Error value of y coordinates for error specified `"errorbar"` and `"errorband"`.
-    #[serde(rename = "yError")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y_error: Option<YErrorClass>,
     /// Secondary error value of y coordinates for error specified `"errorbar"` and `"errorband"`.
-    #[serde(rename = "yError2")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y_error2: Option<YError2Class>,
     /// Offset of y-position of the marks
-    #[serde(rename = "yOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub y_offset: Option<YOffsetClass>,
@@ -18713,7 +22896,9 @@ pub struct EdEncoding {
 
 /// Vega-Lite configuration object. This property can only be defined at the top-level of a
 /// specification.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ConfigClass {
     /// Arc-specific Config
@@ -18749,107 +22934,86 @@ pub struct ConfigClass {
     #[builder(default)]
     pub axis: Option<AxisConfig>,
     /// Config for axes with "band" scales.
-    #[serde(rename = "axisBand")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_band: Option<AxisConfig>,
     /// Config for x-axis along the bottom edge of the chart.
-    #[serde(rename = "axisBottom")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_bottom: Option<AxisConfig>,
     /// Config for axes with "point" or "band" scales.
-    #[serde(rename = "axisDiscrete")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_discrete: Option<AxisConfig>,
     /// Config for y-axis along the left edge of the chart.
-    #[serde(rename = "axisLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_left: Option<AxisConfig>,
     /// Config for axes with "point" scales.
-    #[serde(rename = "axisPoint")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_point: Option<AxisConfig>,
     /// Config for quantitative axes.
-    #[serde(rename = "axisQuantitative")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_quantitative: Option<AxisConfig>,
     /// Config for y-axis along the right edge of the chart.
-    #[serde(rename = "axisRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_right: Option<AxisConfig>,
     /// Config for temporal axes.
-    #[serde(rename = "axisTemporal")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_temporal: Option<AxisConfig>,
     /// Config for x-axis along the top edge of the chart.
-    #[serde(rename = "axisTop")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_top: Option<AxisConfig>,
     /// X-axis specific config.
-    #[serde(rename = "axisX")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_x: Option<AxisConfig>,
     /// Config for x-axes with "band" scales.
-    #[serde(rename = "axisXBand")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_x_band: Option<AxisConfig>,
     /// Config for x-axes with "point" or "band" scales.
-    #[serde(rename = "axisXDiscrete")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_x_discrete: Option<AxisConfig>,
     /// Config for x-axes with "point" scales.
-    #[serde(rename = "axisXPoint")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_x_point: Option<AxisConfig>,
     /// Config for x-quantitative axes.
-    #[serde(rename = "axisXQuantitative")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_x_quantitative: Option<AxisConfig>,
     /// Config for x-temporal axes.
-    #[serde(rename = "axisXTemporal")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_x_temporal: Option<AxisConfig>,
     /// Y-axis specific config.
-    #[serde(rename = "axisY")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_y: Option<AxisConfig>,
     /// Config for y-axes with "band" scales.
-    #[serde(rename = "axisYBand")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_y_band: Option<AxisConfig>,
     /// Config for y-axes with "point" or "band" scales.
-    #[serde(rename = "axisYDiscrete")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_y_discrete: Option<AxisConfig>,
     /// Config for y-axes with "point" scales.
-    #[serde(rename = "axisYPoint")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_y_point: Option<AxisConfig>,
     /// Config for y-quantitative axes.
-    #[serde(rename = "axisYQuantitative")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_y_quantitative: Option<AxisConfig>,
     /// Config for y-temporal axes.
-    #[serde(rename = "axisYTemporal")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub axis_y_temporal: Option<AxisConfig>,
@@ -18879,14 +23043,12 @@ pub struct ConfigClass {
     /// Default axis and legend title for count fields.
     ///
     /// __Default value:__ `'Count of Records`.
-    #[serde(rename = "countTitle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub count_title: Option<String>,
     /// Allow the `formatType` property for text marks and guides to accept a custom formatter
     /// function [registered as a Vega
     /// expression](https://vega.github.io/vega-lite/usage/compile.html#format-type).
-    #[serde(rename = "customFormatTypes")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub custom_format_types: Option<bool>,
@@ -18909,7 +23071,6 @@ pub struct ConfigClass {
     /// "SUM(field)", "YEARMONTH(date)", "BIN(field)").
     /// - `"plain"` - displays only the field name without functions (e.g., "field", "date",
     /// "field").
-    #[serde(rename = "fieldTitle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub field_title: Option<FieldTitle>,
@@ -18934,7 +23095,6 @@ pub struct ConfigClass {
     ///
     /// For a full list of header configuration options, please see the [corresponding section of
     /// in the header documentation](https://vega.github.io/vega-lite/docs/header.html#config).
-    #[serde(rename = "headerColumn")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub header_column: Option<HeaderConfig>,
@@ -18943,7 +23103,6 @@ pub struct ConfigClass {
     ///
     /// For a full list of header configuration options, please see the [corresponding section of
     /// in the header documentation](https://vega.github.io/vega-lite/docs/header.html#config).
-    #[serde(rename = "headerFacet")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub header_facet: Option<HeaderConfig>,
@@ -18952,7 +23111,6 @@ pub struct ConfigClass {
     ///
     /// For a full list of header configuration options, please see the [corresponding section of
     /// in the header documentation](https://vega.github.io/vega-lite/docs/header.html#config).
-    #[serde(rename = "headerRow")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub header_row: Option<HeaderConfig>,
@@ -18975,7 +23133,6 @@ pub struct ConfigClass {
     /// lines. This property provides a global default for text marks, which is overridden by
     /// mark or style config settings, and by the lineBreak mark encoding channel. If
     /// signal-valued, either string or regular expression (regexp) values are valid.
-    #[serde(rename = "lineBreak")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_break: Option<Box<Color>>,
@@ -18998,7 +23155,6 @@ pub struct ConfigClass {
     /// If `config.normalizedNumberFormatType` is specified and `config.customFormatTypes` is
     /// `true`, this value will be passed as `format` alongside `datum.value` to the
     /// `config.numberFormatType` function. __Default value:__ `%`
-    #[serde(rename = "normalizedNumberFormat")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub normalized_number_format: Option<String>,
@@ -19009,7 +23165,6 @@ pub struct ConfigClass {
     /// __Default value:__ `undefined` -- This is equilvalent to call D3-format, which is exposed
     /// as [`format` in Vega-Expression](https://vega.github.io/vega/docs/expressions/#format).
     /// __Note:__ You must also set `customFormatTypes` to `true` to use this feature.
-    #[serde(rename = "normalizedNumberFormatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub normalized_number_format_type: Option<String>,
@@ -19021,7 +23176,6 @@ pub struct ConfigClass {
     /// If `config.numberFormatType` is specified and `config.customFormatTypes` is `true`, this
     /// value will be passed as `format` alongside `datum.value` to the `config.numberFormatType`
     /// function.
-    #[serde(rename = "numberFormat")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub number_format: Option<String>,
@@ -19032,7 +23186,6 @@ pub struct ConfigClass {
     /// __Default value:__ `undefined` -- This is equilvalent to call D3-format, which is exposed
     /// as [`format` in Vega-Expression](https://vega.github.io/vega/docs/expressions/#format).
     /// __Note:__ You must also set `customFormatTypes` to `true` to use this feature.
-    #[serde(rename = "numberFormatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub number_format_type: Option<String>,
@@ -19109,7 +23262,6 @@ pub struct ConfigClass {
     ///
     /// __Default value:__ `"%b %d, %Y"` __Note:__ Axes automatically determine the format for
     /// each label automatically so this config does not affect axes.
-    #[serde(rename = "timeFormat")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_format: Option<String>,
@@ -19122,7 +23274,6 @@ pub struct ConfigClass {
     /// Vega-Expression](https://vega.github.io/vega/docs/expressions/#timeFormat). __Note:__ You
     /// must also set `customFormatTypes` to `true` and there must *not* be a `timeUnit` defined
     /// to use this feature.
-    #[serde(rename = "timeFormatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_format_type: Option<String>,
@@ -19133,6 +23284,12 @@ pub struct ConfigClass {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title: Option<BaseTitleNoValueRefs>,
+    /// Define [custom format
+    /// configuration](https://vega.github.io/vega-lite/docs/config.html#format) for tooltips. If
+    /// unspecified, default format config will be applied.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub tooltip_format: Option<FormatConfig>,
     /// Trail-Specific Config
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
@@ -19149,7 +23306,9 @@ pub struct ConfigClass {
 /// Image-specific Config
 ///
 /// Rect-Specific Config
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct RectConfig {
     /// The horizontal alignment of the text or ranged marks (area, bar, image, rect, rule). One
@@ -19165,11 +23324,9 @@ pub struct RectConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "ariaRole")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role: Option<Box<Color>>,
-    #[serde(rename = "ariaRoleDescription")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role_description: Option<Box<Color>>,
@@ -19193,7 +23350,6 @@ pub struct RectConfig {
     /// statisticians) or 1 (Vega-Lite default, D3 example style).
     ///
     /// __Default value:__ `1`
-    #[serde(rename = "binSpacing")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub bin_spacing: Option<f64>,
@@ -19215,27 +23371,21 @@ pub struct RectConfig {
     /// The default size of the bars on continuous scales.
     ///
     /// __Default value:__ `5`
-    #[serde(rename = "continuousBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub continuous_band_size: Option<f64>,
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_right: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_right: Option<CornerRadiusUnion>,
@@ -19250,7 +23400,6 @@ pub struct RectConfig {
     pub dir: Option<Dir>,
     /// The default size of the bars with discrete dimensions. If unspecified, the default size
     /// is  `step-2`, which provides 2 pixel offset between bars.
-    #[serde(rename = "discreteBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub discrete_band_size: Option<DiscreteBandSize>,
@@ -19263,7 +23412,6 @@ pub struct RectConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ellipsis: Option<Box<Color>>,
-    #[serde(rename = "endAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub end_angle: Option<CornerRadiusUnion>,
@@ -19286,22 +23434,18 @@ pub struct RectConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub filled: Option<bool>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<Opacity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font: Option<Box<Color>>,
-    #[serde(rename = "fontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_size: Option<FontSize>,
-    #[serde(rename = "fontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_style: Option<Box<Color>>,
-    #[serde(rename = "fontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_weight: Option<FontWeightUnion>,
@@ -19314,32 +23458,57 @@ pub struct RectConfig {
     /// The inner radius in pixels of arc marks. `innerRadius` is an alias for `radius2`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "innerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub inner_radius: Option<CornerRadiusUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub interpolate: Option<MarkConfigInterpolate>,
-    /// Defines how Vega-Lite should handle marks for invalid values (`null` and `NaN`).
-    /// - If set to `"filter"` (default), all data items with null values will be skipped (for
-    /// line, trail, and area marks) or filtered (for other marks).
-    /// - If `null`, all data items are included. In this case, invalid values will be
-    /// interpreted as zeroes.
-    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    /// Invalid data mode, which defines how the marks and corresponding scales should represent
+    /// invalid values (`null` and `NaN` in continuous scales *without* defined output for
+    /// invalid values).
+    ///
+    /// - `"filter"` — *Exclude* all invalid values from the visualization's *marks* and
+    /// *scales*. For path marks (for line, area, trail), this option will create paths that
+    /// connect valid points, as if the data rows with invalid values do not exist.
+    ///
+    /// - `"break-paths-filter-domains"` — Break path marks (for line, area, trail) at invalid
+    /// values.  For non-path marks, this is equivalent to `"filter"`. All *scale* domains will
+    /// *exclude* these filtered data points.
+    ///
+    /// - `"break-paths-show-domains"` — Break paths (for line, area, trail) at invalid values.
+    /// Hide invalid values for non-path marks. All *scale* domains will *include* these filtered
+    /// data points (for both path and non-path marks).
+    ///
+    /// - `"show"` or `null` — Show all data points in the marks and scale domains. Each scale
+    /// will use the output for invalid values defined in `config.scale.invalid` or, if
+    /// unspecified, by default invalid values will produce the same visual values as zero (if
+    /// the scale includes zero) or the minimum value (if the scale does not include zero).
+    ///
+    /// - `"break-paths-show-path-domains"` (default) — This is equivalent to
+    /// `"break-paths-show-domains"` for path-based marks (line/area/trail) and `"filter"` for
+    /// non-path marks.
+    ///
+    /// __Note__: If any channel's scale has an output for invalid values defined in
+    /// `config.scale.invalid`, all values for the scales will be considered "valid" since they
+    /// can produce a reasonable output for the scales. Thus, fields for such channels will not
+    /// be filtered and will not cause path breaks.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub invalid: RemovableValue<Invalid>,
+    pub invalid: Option<MarkInvalidDataMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "lineBreak")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_break: Option<Box<Color>>,
-    #[serde(rename = "lineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_height: Option<CornerRadiusUnion>,
+    /// The minimum band size for bar and rectangle marks. __Default value:__ `0.25`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub min_band_size: Option<CornerRadiusUnion>,
     /// The overall opacity (value between [0,1]).
     ///
     /// __Default value:__ `0.7` for non-aggregate plots with `point`, `tick`, `circle`, or
@@ -19367,11 +23536,9 @@ pub struct RectConfig {
     /// The outer radius in pixels of arc marks. `outerRadius` is an alias for `radius`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "outerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub outer_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "padAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub pad_angle: Option<CornerRadiusUnion>,
@@ -19411,7 +23578,6 @@ pub struct RectConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub smooth: Option<Aria>,
-    #[serde(rename = "startAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub start_angle: Option<CornerRadiusUnion>,
@@ -19422,35 +23588,27 @@ pub struct RectConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke: Option<MarkConfigFill>,
-    #[serde(rename = "strokeCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_cap: Option<Cap>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeJoin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_join: Option<StrokeJoinUnion>,
-    #[serde(rename = "strokeMiterLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_miter_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<Opacity>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<FontSize>,
@@ -19473,17 +23631,18 @@ pub struct RectConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta2: Option<CornerRadiusUnion>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<CornerRadiusUnion>,
     /// Default relative band position for a time unit. If set to `0`, the marks will be
     /// positioned at the beginning of the time unit band step. If set to `0.5`, the marks will
     /// be positioned in the middle of the time unit band step.
-    #[serde(rename = "timeUnitBandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_position: Option<f64>,
     /// Default relative band size for a time unit. If set to `1`, the bandwidth of the marks
     /// will be equal to the time unit band step. If set to `0.5`, bandwidth of the marks will be
     /// half of the time unit band step.
-    #[serde(rename = "timeUnitBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_size: Option<f64>,
@@ -19542,7 +23701,9 @@ pub struct RectConfig {
 }
 
 /// Area-Specific Config
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct AreaConfig {
     /// The horizontal alignment of the text or ranged marks (area, bar, image, rect, rule). One
@@ -19558,11 +23719,9 @@ pub struct AreaConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "ariaRole")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role: Option<Box<Color>>,
-    #[serde(rename = "ariaRoleDescription")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role_description: Option<Box<Color>>,
@@ -19597,23 +23756,18 @@ pub struct AreaConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub color: Option<MarkConfigColor>,
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_right: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_right: Option<CornerRadiusUnion>,
@@ -19635,7 +23789,6 @@ pub struct AreaConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ellipsis: Option<Box<Color>>,
-    #[serde(rename = "endAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub end_angle: Option<CornerRadiusUnion>,
@@ -19658,22 +23811,18 @@ pub struct AreaConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub filled: Option<bool>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<Opacity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font: Option<Box<Color>>,
-    #[serde(rename = "fontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_size: Option<FontSize>,
-    #[serde(rename = "fontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_style: Option<Box<Color>>,
-    #[serde(rename = "fontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_weight: Option<FontWeightUnion>,
@@ -19686,21 +23835,44 @@ pub struct AreaConfig {
     /// The inner radius in pixels of arc marks. `innerRadius` is an alias for `radius2`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "innerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub inner_radius: Option<CornerRadiusUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub interpolate: Option<MarkConfigInterpolate>,
-    /// Defines how Vega-Lite should handle marks for invalid values (`null` and `NaN`).
-    /// - If set to `"filter"` (default), all data items with null values will be skipped (for
-    /// line, trail, and area marks) or filtered (for other marks).
-    /// - If `null`, all data items are included. In this case, invalid values will be
-    /// interpreted as zeroes.
-    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    /// Invalid data mode, which defines how the marks and corresponding scales should represent
+    /// invalid values (`null` and `NaN` in continuous scales *without* defined output for
+    /// invalid values).
+    ///
+    /// - `"filter"` — *Exclude* all invalid values from the visualization's *marks* and
+    /// *scales*. For path marks (for line, area, trail), this option will create paths that
+    /// connect valid points, as if the data rows with invalid values do not exist.
+    ///
+    /// - `"break-paths-filter-domains"` — Break path marks (for line, area, trail) at invalid
+    /// values.  For non-path marks, this is equivalent to `"filter"`. All *scale* domains will
+    /// *exclude* these filtered data points.
+    ///
+    /// - `"break-paths-show-domains"` — Break paths (for line, area, trail) at invalid values.
+    /// Hide invalid values for non-path marks. All *scale* domains will *include* these filtered
+    /// data points (for both path and non-path marks).
+    ///
+    /// - `"show"` or `null` — Show all data points in the marks and scale domains. Each scale
+    /// will use the output for invalid values defined in `config.scale.invalid` or, if
+    /// unspecified, by default invalid values will produce the same visual values as zero (if
+    /// the scale includes zero) or the minimum value (if the scale does not include zero).
+    ///
+    /// - `"break-paths-show-path-domains"` (default) — This is equivalent to
+    /// `"break-paths-show-domains"` for path-based marks (line/area/trail) and `"filter"` for
+    /// non-path marks.
+    ///
+    /// __Note__: If any channel's scale has an output for invalid values defined in
+    /// `config.scale.invalid`, all values for the scales will be considered "valid" since they
+    /// can produce a reasonable output for the scales. Thus, fields for such channels will not
+    /// be filtered and will not cause path breaks.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub invalid: RemovableValue<Invalid>,
+    pub invalid: Option<MarkInvalidDataMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub limit: Option<CornerRadiusUnion>,
@@ -19716,11 +23888,9 @@ pub struct AreaConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line: Option<Line>,
-    #[serde(rename = "lineBreak")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_break: Option<Box<Color>>,
-    #[serde(rename = "lineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_height: Option<CornerRadiusUnion>,
@@ -19751,11 +23921,9 @@ pub struct AreaConfig {
     /// The outer radius in pixels of arc marks. `outerRadius` is an alias for `radius`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "outerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub outer_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "padAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub pad_angle: Option<CornerRadiusUnion>,
@@ -19811,7 +23979,6 @@ pub struct AreaConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub smooth: Option<Aria>,
-    #[serde(rename = "startAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub start_angle: Option<CornerRadiusUnion>,
@@ -19822,35 +23989,27 @@ pub struct AreaConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke: Option<MarkConfigFill>,
-    #[serde(rename = "strokeCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_cap: Option<Cap>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeJoin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_join: Option<StrokeJoinUnion>,
-    #[serde(rename = "strokeMiterLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_miter_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<Opacity>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<FontSize>,
@@ -19873,17 +24032,18 @@ pub struct AreaConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta2: Option<CornerRadiusUnion>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<CornerRadiusUnion>,
     /// Default relative band position for a time unit. If set to `0`, the marks will be
     /// positioned at the beginning of the time unit band step. If set to `0.5`, the marks will
     /// be positioned in the middle of the time unit band step.
-    #[serde(rename = "timeUnitBandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_position: Option<f64>,
     /// Default relative band size for a time unit. If set to `1`, the bandwidth of the marks
     /// will be equal to the time unit band step. If set to `0.5`, bandwidth of the marks will be
     /// half of the time unit band step.
-    #[serde(rename = "timeUnitBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_size: Option<f64>,
@@ -19987,13 +24147,14 @@ pub struct AreaConfig {
 /// Config for y-quantitative axes.
 ///
 /// Config for y-temporal axes.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct AxisConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<CornerRadiusUnion>,
@@ -20011,27 +24172,21 @@ pub struct AxisConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain: Option<bool>,
-    #[serde(rename = "domainCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_cap: Option<Cap>,
-    #[serde(rename = "domainColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_color: Option<Box<Color>>,
-    #[serde(rename = "domainDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "domainDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "domainOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "domainWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_width: Option<CornerRadiusUnion>,
@@ -20065,7 +24220,6 @@ pub struct AxisConfig {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
@@ -20077,47 +24231,36 @@ pub struct AxisConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid: Option<bool>,
-    #[serde(rename = "gridCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_cap: Option<Cap>,
-    #[serde(rename = "gridColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_color: Option<GridColorUnion>,
-    #[serde(rename = "gridDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_dash: Option<AxisBandGridDash>,
-    #[serde(rename = "gridDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_dash_offset: Option<GridDashOffsetUnion>,
-    #[serde(rename = "gridOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_opacity: Option<GridOpacityUnion>,
-    #[serde(rename = "gridWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_width: Option<GridWidthUnion>,
-    #[serde(rename = "labelAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_align: Option<ConditionalAxisPropertyAlignNull>,
-    #[serde(rename = "labelAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_angle: Option<LabelAngle>,
-    #[serde(rename = "labelBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_baseline: Option<PurpleTextBaseline>,
-    #[serde(rename = "labelBound")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_bound: Option<Label>,
-    #[serde(rename = "labelColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_color: Option<GridColorUnion>,
@@ -20125,7 +24268,6 @@ pub struct AxisConfig {
     ///
     /// __Note:__ The label text and value can be assessed via the `label` and `value` properties
     /// of the axis's backing `datum` object.
-    #[serde(rename = "labelExpr")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_expr: Option<String>,
@@ -20138,43 +24280,33 @@ pub struct AxisConfig {
     /// can sometimes help the labels better visually group with corresponding axis ticks.
     ///
     /// __Default value:__ `true` for axis of a continuous x-scale. Otherwise, `false`.
-    #[serde(rename = "labelFlush")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_flush: Option<LabelFlush>,
-    #[serde(rename = "labelFlushOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_flush_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font: Option<ConditionalAxisPropertyStringNull>,
-    #[serde(rename = "labelFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_size: Option<GridWidthUnion>,
-    #[serde(rename = "labelFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_style: Option<ConditionalAxisPropertyFontStyleNull>,
-    #[serde(rename = "labelFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_weight: Option<FontWeight>,
-    #[serde(rename = "labelLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_line_height: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_offset: Option<GridDashOffsetUnion>,
-    #[serde(rename = "labelOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_opacity: Option<GridDashOffsetUnion>,
@@ -20186,11 +24318,9 @@ pub struct AxisConfig {
     ///
     /// __Default value:__ `true` for non-nominal fields with non-log scales; `"greedy"` for log
     /// scales; otherwise `false`.
-    #[serde(rename = "labelOverlap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_overlap: Option<LabelOverlapUnion>,
-    #[serde(rename = "labelPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_padding: Option<GridDashOffsetUnion>,
@@ -20200,15 +24330,12 @@ pub struct AxisConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub labels: Option<bool>,
-    #[serde(rename = "labelSeparation")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_separation: Option<CornerRadiusUnion>,
-    #[serde(rename = "maxExtent")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub max_extent: Option<CornerRadiusUnion>,
-    #[serde(rename = "minExtent")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub min_extent: Option<CornerRadiusUnion>,
@@ -20248,15 +24375,12 @@ pub struct AxisConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub style: Option<LegendText>,
-    #[serde(rename = "tickBand")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_band: Option<TickBandUnion>,
-    #[serde(rename = "tickCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_cap: Option<Cap>,
-    #[serde(rename = "tickColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_color: Option<GridColorUnion>,
@@ -20273,15 +24397,12 @@ pub struct AxisConfig {
     ///
     /// __Default value__: Determine using a formula `ceil(width/40)` for x and `ceil(height/40)`
     /// for y.
-    #[serde(rename = "tickCount")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_count: Option<TickCount>,
-    #[serde(rename = "tickDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_dash: Option<AxisBandTickDash>,
-    #[serde(rename = "tickDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_dash_offset: Option<GridDashOffsetUnion>,
@@ -20289,7 +24410,6 @@ pub struct AxisConfig {
     /// the axis. This flag is useful for styling axes for `band` scales such that ticks are
     /// placed on band boundaries rather in the middle of a band. Use in conjunction with
     /// `"bandPosition": 1` and an axis `"padding"` value of `0`.
-    #[serde(rename = "tickExtra")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_extra: Option<bool>,
@@ -20297,15 +24417,12 @@ pub struct AxisConfig {
     /// example, a value of `1` indicates that ticks should not be less than 1 unit apart. If
     /// `tickMinStep` is specified, the `tickCount` value will be adjusted, if necessary, to
     /// enforce the minimum step value.
-    #[serde(rename = "tickMinStep")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_min_step: Option<CornerRadiusUnion>,
-    #[serde(rename = "tickOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "tickOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_opacity: Option<GridDashOffsetUnion>,
@@ -20313,7 +24430,6 @@ pub struct AxisConfig {
     /// integer.
     ///
     /// __Default value:__ `true`
-    #[serde(rename = "tickRound")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_round: Option<bool>,
@@ -20323,11 +24439,9 @@ pub struct AxisConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ticks: Option<bool>,
-    #[serde(rename = "tickSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_size: Option<GridWidthUnion>,
-    #[serde(rename = "tickWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_width: Option<GridWidthUnion>,
@@ -20353,63 +24467,48 @@ pub struct AxisConfig {
     #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
     #[builder(default)]
     pub title: RemovableValue<LegendText>,
-    #[serde(rename = "titleAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_align: Option<TitleAlignUnion>,
-    #[serde(rename = "titleAnchor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_anchor: Option<TitleAnchorUnion>,
-    #[serde(rename = "titleAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_angle: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_baseline: Option<TextBaseline>,
-    #[serde(rename = "titleColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_color: Option<Box<Color>>,
-    #[serde(rename = "titleFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font: Option<Box<Color>>,
-    #[serde(rename = "titleFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_size: Option<FontSize>,
-    #[serde(rename = "titleFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_style: Option<Box<Color>>,
-    #[serde(rename = "titleFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_weight: Option<FontWeightUnion>,
-    #[serde(rename = "titleLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_limit: Option<FontSize>,
-    #[serde(rename = "titleLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_line_height: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "titlePadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_padding: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleX")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_x: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleY")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_y: Option<CornerRadiusUnion>,
@@ -20429,6 +24528,18 @@ pub struct AxisConfig {
     pub zindex: Option<f64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum AxisBandGridDash {
+    AmbitiousExprRef(AmbitiousExprRef),
+    DoubleArray(Vec<f64>),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct AmbitiousExprRef {
@@ -20447,6 +24558,18 @@ pub struct AmbitiousExprRef {
     pub value: Option<Vec<f64>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum AxisBandTickDash {
+    CunningExprRef(CunningExprRef),
+    DoubleArray(Vec<f64>),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct CunningExprRef {
@@ -20466,7 +24589,9 @@ pub struct CunningExprRef {
 }
 
 /// Bar-Specific Config
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct BarConfig {
     /// The horizontal alignment of the text or ranged marks (area, bar, image, rect, rule). One
@@ -20482,11 +24607,9 @@ pub struct BarConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "ariaRole")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role: Option<Box<Color>>,
-    #[serde(rename = "ariaRoleDescription")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role_description: Option<Box<Color>>,
@@ -20510,7 +24633,6 @@ pub struct BarConfig {
     /// statisticians) or 1 (Vega-Lite default, D3 example style).
     ///
     /// __Default value:__ `1`
-    #[serde(rename = "binSpacing")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub bin_spacing: Option<f64>,
@@ -20532,34 +24654,27 @@ pub struct BarConfig {
     /// The default size of the bars on continuous scales.
     ///
     /// __Default value:__ `5`
-    #[serde(rename = "continuousBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub continuous_band_size: Option<f64>,
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_right: Option<CornerRadiusUnion>,
     /// - For vertical bars, top-left and top-right corner radius.
     ///
     /// - For horizontal bars, top-right and bottom-right corner radius.
-    #[serde(rename = "cornerRadiusEnd")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_end: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_right: Option<CornerRadiusUnion>,
@@ -20574,7 +24689,6 @@ pub struct BarConfig {
     pub dir: Option<Dir>,
     /// The default size of the bars with discrete dimensions. If unspecified, the default size
     /// is  `step-2`, which provides 2 pixel offset between bars.
-    #[serde(rename = "discreteBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub discrete_band_size: Option<DiscreteBandSize>,
@@ -20587,7 +24701,6 @@ pub struct BarConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ellipsis: Option<Box<Color>>,
-    #[serde(rename = "endAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub end_angle: Option<CornerRadiusUnion>,
@@ -20610,22 +24723,18 @@ pub struct BarConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub filled: Option<bool>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<Opacity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font: Option<Box<Color>>,
-    #[serde(rename = "fontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_size: Option<FontSize>,
-    #[serde(rename = "fontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_style: Option<Box<Color>>,
-    #[serde(rename = "fontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_weight: Option<FontWeightUnion>,
@@ -20638,32 +24747,57 @@ pub struct BarConfig {
     /// The inner radius in pixels of arc marks. `innerRadius` is an alias for `radius2`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "innerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub inner_radius: Option<CornerRadiusUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub interpolate: Option<MarkConfigInterpolate>,
-    /// Defines how Vega-Lite should handle marks for invalid values (`null` and `NaN`).
-    /// - If set to `"filter"` (default), all data items with null values will be skipped (for
-    /// line, trail, and area marks) or filtered (for other marks).
-    /// - If `null`, all data items are included. In this case, invalid values will be
-    /// interpreted as zeroes.
-    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    /// Invalid data mode, which defines how the marks and corresponding scales should represent
+    /// invalid values (`null` and `NaN` in continuous scales *without* defined output for
+    /// invalid values).
+    ///
+    /// - `"filter"` — *Exclude* all invalid values from the visualization's *marks* and
+    /// *scales*. For path marks (for line, area, trail), this option will create paths that
+    /// connect valid points, as if the data rows with invalid values do not exist.
+    ///
+    /// - `"break-paths-filter-domains"` — Break path marks (for line, area, trail) at invalid
+    /// values.  For non-path marks, this is equivalent to `"filter"`. All *scale* domains will
+    /// *exclude* these filtered data points.
+    ///
+    /// - `"break-paths-show-domains"` — Break paths (for line, area, trail) at invalid values.
+    /// Hide invalid values for non-path marks. All *scale* domains will *include* these filtered
+    /// data points (for both path and non-path marks).
+    ///
+    /// - `"show"` or `null` — Show all data points in the marks and scale domains. Each scale
+    /// will use the output for invalid values defined in `config.scale.invalid` or, if
+    /// unspecified, by default invalid values will produce the same visual values as zero (if
+    /// the scale includes zero) or the minimum value (if the scale does not include zero).
+    ///
+    /// - `"break-paths-show-path-domains"` (default) — This is equivalent to
+    /// `"break-paths-show-domains"` for path-based marks (line/area/trail) and `"filter"` for
+    /// non-path marks.
+    ///
+    /// __Note__: If any channel's scale has an output for invalid values defined in
+    /// `config.scale.invalid`, all values for the scales will be considered "valid" since they
+    /// can produce a reasonable output for the scales. Thus, fields for such channels will not
+    /// be filtered and will not cause path breaks.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub invalid: RemovableValue<Invalid>,
+    pub invalid: Option<MarkInvalidDataMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "lineBreak")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_break: Option<Box<Color>>,
-    #[serde(rename = "lineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_height: Option<CornerRadiusUnion>,
+    /// The minimum band size for bar and rectangle marks. __Default value:__ `0.25`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub min_band_size: Option<CornerRadiusUnion>,
     /// The overall opacity (value between [0,1]).
     ///
     /// __Default value:__ `0.7` for non-aggregate plots with `point`, `tick`, `circle`, or
@@ -20691,11 +24825,9 @@ pub struct BarConfig {
     /// The outer radius in pixels of arc marks. `outerRadius` is an alias for `radius`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "outerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub outer_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "padAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub pad_angle: Option<CornerRadiusUnion>,
@@ -20735,7 +24867,6 @@ pub struct BarConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub smooth: Option<Aria>,
-    #[serde(rename = "startAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub start_angle: Option<CornerRadiusUnion>,
@@ -20746,35 +24877,27 @@ pub struct BarConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke: Option<MarkConfigFill>,
-    #[serde(rename = "strokeCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_cap: Option<Cap>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeJoin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_join: Option<StrokeJoinUnion>,
-    #[serde(rename = "strokeMiterLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_miter_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<Opacity>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<FontSize>,
@@ -20797,17 +24920,18 @@ pub struct BarConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta2: Option<CornerRadiusUnion>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<CornerRadiusUnion>,
     /// Default relative band position for a time unit. If set to `0`, the marks will be
     /// positioned at the beginning of the time unit band step. If set to `0.5`, the marks will
     /// be positioned in the middle of the time unit band step.
-    #[serde(rename = "timeUnitBandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_position: Option<f64>,
     /// Default relative band size for a time unit. If set to `1`, the bandwidth of the marks
     /// will be equal to the time unit band step. If set to `0.5`, bandwidth of the marks will be
     /// half of the time unit band step.
-    #[serde(rename = "timeUnitBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_size: Option<f64>,
@@ -20902,6 +25026,29 @@ pub struct BoxPlotConfig {
     pub ticks: Option<AnyMarkConfig>,
 }
 
+/// The extent of the whiskers. Available options include:
+/// - `"min-max"`: min and max are the lower and upper whiskers respectively.
+/// - A number representing multiple of the interquartile range. This number will be
+/// multiplied by the IQR to determine whisker boundary, which spans from the smallest data
+/// to the largest data within the range _[Q1 - k * IQR, Q3 + k * IQR]_ where _Q1_ and _Q3_
+/// are the first and third quartiles while _IQR_ is the interquartile range (_Q3-Q1_).
+///
+/// __Default value:__ `1.5`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum BoxplotExtent {
+    Double(f64),
+    Enum(ExtentEnum),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExtentEnum {
+    #[serde(rename = "min-max")]
+    MinMax,
+}
+
 /// Circle-Specific Config
 ///
 /// Geoshape-Specific Config
@@ -20923,7 +25070,9 @@ pub struct BoxPlotConfig {
 /// Default style for axis, legend, and header titles.
 ///
 /// Text-Specific Config
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct MarkConfig {
     /// The horizontal alignment of the text or ranged marks (area, bar, image, rect, rule). One
@@ -20939,11 +25088,9 @@ pub struct MarkConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "ariaRole")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role: Option<Box<Color>>,
-    #[serde(rename = "ariaRoleDescription")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role_description: Option<Box<Color>>,
@@ -20978,23 +25125,18 @@ pub struct MarkConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub color: Option<MarkConfigColor>,
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_right: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_right: Option<CornerRadiusUnion>,
@@ -21016,7 +25158,6 @@ pub struct MarkConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ellipsis: Option<Box<Color>>,
-    #[serde(rename = "endAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub end_angle: Option<CornerRadiusUnion>,
@@ -21039,22 +25180,18 @@ pub struct MarkConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub filled: Option<bool>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<Opacity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font: Option<Box<Color>>,
-    #[serde(rename = "fontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_size: Option<FontSize>,
-    #[serde(rename = "fontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_style: Option<Box<Color>>,
-    #[serde(rename = "fontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_weight: Option<FontWeightUnion>,
@@ -21067,29 +25204,50 @@ pub struct MarkConfig {
     /// The inner radius in pixels of arc marks. `innerRadius` is an alias for `radius2`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "innerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub inner_radius: Option<CornerRadiusUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub interpolate: Option<MarkConfigInterpolate>,
-    /// Defines how Vega-Lite should handle marks for invalid values (`null` and `NaN`).
-    /// - If set to `"filter"` (default), all data items with null values will be skipped (for
-    /// line, trail, and area marks) or filtered (for other marks).
-    /// - If `null`, all data items are included. In this case, invalid values will be
-    /// interpreted as zeroes.
-    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    /// Invalid data mode, which defines how the marks and corresponding scales should represent
+    /// invalid values (`null` and `NaN` in continuous scales *without* defined output for
+    /// invalid values).
+    ///
+    /// - `"filter"` — *Exclude* all invalid values from the visualization's *marks* and
+    /// *scales*. For path marks (for line, area, trail), this option will create paths that
+    /// connect valid points, as if the data rows with invalid values do not exist.
+    ///
+    /// - `"break-paths-filter-domains"` — Break path marks (for line, area, trail) at invalid
+    /// values.  For non-path marks, this is equivalent to `"filter"`. All *scale* domains will
+    /// *exclude* these filtered data points.
+    ///
+    /// - `"break-paths-show-domains"` — Break paths (for line, area, trail) at invalid values.
+    /// Hide invalid values for non-path marks. All *scale* domains will *include* these filtered
+    /// data points (for both path and non-path marks).
+    ///
+    /// - `"show"` or `null` — Show all data points in the marks and scale domains. Each scale
+    /// will use the output for invalid values defined in `config.scale.invalid` or, if
+    /// unspecified, by default invalid values will produce the same visual values as zero (if
+    /// the scale includes zero) or the minimum value (if the scale does not include zero).
+    ///
+    /// - `"break-paths-show-path-domains"` (default) — This is equivalent to
+    /// `"break-paths-show-domains"` for path-based marks (line/area/trail) and `"filter"` for
+    /// non-path marks.
+    ///
+    /// __Note__: If any channel's scale has an output for invalid values defined in
+    /// `config.scale.invalid`, all values for the scales will be considered "valid" since they
+    /// can produce a reasonable output for the scales. Thus, fields for such channels will not
+    /// be filtered and will not cause path breaks.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub invalid: RemovableValue<Invalid>,
+    pub invalid: Option<MarkInvalidDataMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "lineBreak")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_break: Option<Box<Color>>,
-    #[serde(rename = "lineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_height: Option<CornerRadiusUnion>,
@@ -21120,11 +25278,9 @@ pub struct MarkConfig {
     /// The outer radius in pixels of arc marks. `outerRadius` is an alias for `radius`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "outerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub outer_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "padAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub pad_angle: Option<CornerRadiusUnion>,
@@ -21164,7 +25320,6 @@ pub struct MarkConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub smooth: Option<Aria>,
-    #[serde(rename = "startAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub start_angle: Option<CornerRadiusUnion>,
@@ -21175,35 +25330,27 @@ pub struct MarkConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke: Option<MarkConfigFill>,
-    #[serde(rename = "strokeCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_cap: Option<Cap>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeJoin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_join: Option<StrokeJoinUnion>,
-    #[serde(rename = "strokeMiterLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_miter_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<Opacity>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<FontSize>,
@@ -21226,17 +25373,18 @@ pub struct MarkConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta2: Option<CornerRadiusUnion>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<CornerRadiusUnion>,
     /// Default relative band position for a time unit. If set to `0`, the marks will be
     /// positioned at the beginning of the time unit band step. If set to `0.5`, the marks will
     /// be positioned in the middle of the time unit band step.
-    #[serde(rename = "timeUnitBandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_position: Option<f64>,
     /// Default relative band size for a time unit. If set to `1`, the bandwidth of the marks
     /// will be equal to the time unit band step. If set to `0.5`, bandwidth of the marks will be
     /// half of the time unit band step.
-    #[serde(rename = "timeUnitBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_size: Option<f64>,
@@ -21338,7 +25486,7 @@ pub struct ErrorBandConfig {
     #[builder(default)]
     pub borders: Option<AnyMarkConfig>,
     /// The extent of the band. Available options include:
-    /// - `"ci"`: Extend the band to the confidence interval of the mean.
+    /// - `"ci"`: Extend the band to the 95% bootstrapped confidence interval of the mean.
     /// - `"stderr"`: The size of band are set to the value of standard error, extending from the
     /// mean.
     /// - `"stdev"`: The size of band are set to the value of standard deviation, extending from
@@ -21378,12 +25526,40 @@ pub struct ErrorBandConfig {
     pub tension: Option<f64>,
 }
 
+/// The extent of the band. Available options include:
+/// - `"ci"`: Extend the band to the 95% bootstrapped confidence interval of the mean.
+/// - `"stderr"`: The size of band are set to the value of standard error, extending from the
+/// mean.
+/// - `"stdev"`: The size of band are set to the value of standard deviation, extending from
+/// the mean.
+/// - `"iqr"`: Extend the band to the q1 and q3.
+///
+/// __Default value:__ `"stderr"`.
+///
+/// The extent of the rule. Available options include:
+/// - `"ci"`: Extend the rule to the 95% bootstrapped confidence interval of the mean.
+/// - `"stderr"`: The size of rule are set to the value of standard error, extending from the
+/// mean.
+/// - `"stdev"`: The size of rule are set to the value of standard deviation, extending from
+/// the mean.
+/// - `"iqr"`: Extend the rule to the q1 and q3.
+///
+/// __Default value:__ `"stderr"`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ErrorbandExtent {
+    Ci,
+    Iqr,
+    Stderr,
+    Stdev,
+}
+
 /// ErrorBar Config
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ErrorBarConfig {
     /// The extent of the rule. Available options include:
-    /// - `"ci"`: Extend the rule to the confidence interval of the mean.
+    /// - `"ci"`: Extend the rule to the 95% bootstrapped confidence interval of the mean.
     /// - `"stderr"`: The size of rule are set to the value of standard error, extending from the
     /// mean.
     /// - `"stdev"`: The size of rule are set to the value of standard deviation, extending from
@@ -21410,6 +25586,21 @@ pub struct ErrorBarConfig {
     pub ticks: Option<AnyMarkConfig>,
 }
 
+/// Defines how Vega-Lite generates title for fields. There are three possible styles:
+/// - `"verbal"` (Default) - displays function in a verbal style (e.g., "Sum of field",
+/// "Year-month of date", "field (binned)").
+/// - `"function"` - displays function using parentheses and capitalized texts (e.g.,
+/// "SUM(field)", "YEARMONTH(date)", "BIN(field)").
+/// - `"plain"` - displays only the field name without functions (e.g., "field", "date",
+/// "field").
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FieldTitle {
+    Functional,
+    Plain,
+    Verbal,
+}
+
 /// Header configuration, which determines default properties for all
 /// [headers](https://vega.github.io/vega-lite/docs/header.html).
 ///
@@ -21433,7 +25624,9 @@ pub struct ErrorBarConfig {
 ///
 /// For a full list of header configuration options, please see the [corresponding section of
 /// in the header documentation](https://vega.github.io/vega-lite/docs/header.html#config).
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct HeaderConfig {
     /// When used with the default `"number"` and `"time"` format type, the text formatting
@@ -21466,26 +25659,22 @@ pub struct HeaderConfig {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
     /// Horizontal text alignment of header labels. One of `"left"`, `"center"`, or `"right"`.
-    #[serde(rename = "labelAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_align: Option<TitleAlignUnion>,
     /// The anchor position for placing the labels. One of `"start"`, `"middle"`, or `"end"`. For
     /// example, with a label orientation of top these anchor positions map to a left-, center-,
     /// or right-aligned label.
-    #[serde(rename = "labelAnchor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_anchor: Option<TitleAnchorEnum>,
     /// The rotation angle of the header labels.
     ///
     /// __Default value:__ `0` for column header, `-90` for row header.
-    #[serde(rename = "labelAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_angle: Option<f64>,
@@ -21493,12 +25682,10 @@ pub struct HeaderConfig {
     /// `"top"`, `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and
     /// `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated
     /// relative to the `titleLineHeight` rather than `titleFontSize` alone.
-    #[serde(rename = "labelBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_baseline: Option<TextBaseline>,
     /// The color of the header label, can be in hex color code or regular color name.
-    #[serde(rename = "labelColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_color: Option<Box<Color>>,
@@ -21506,27 +25693,22 @@ pub struct HeaderConfig {
     ///
     /// __Note:__ The label text and value can be assessed via the `label` and `value` properties
     /// of the header's backing `datum` object.
-    #[serde(rename = "labelExpr")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_expr: Option<String>,
     /// The font of the header label.
-    #[serde(rename = "labelFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font: Option<Box<Color>>,
     /// The font size of the header label, in pixels.
-    #[serde(rename = "labelFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_size: Option<CornerRadiusUnion>,
     /// The font style of the header label.
-    #[serde(rename = "labelFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_style: Option<Box<Color>>,
     /// The font weight of the header label.
-    #[serde(rename = "labelFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_weight: Option<FontWeightUnion>,
@@ -21534,25 +25716,21 @@ pub struct HeaderConfig {
     /// truncated if the rendered size exceeds the limit.
     ///
     /// __Default value:__ `0`, indicating no limit
-    #[serde(rename = "labelLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_limit: Option<CornerRadiusUnion>,
     /// Line height in pixels for multi-line header labels or title text with `"line-top"` or
     /// `"line-bottom"` baseline.
-    #[serde(rename = "labelLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_line_height: Option<CornerRadiusUnion>,
     /// The orientation of the header label. One of `"top"`, `"bottom"`, `"left"` or `"right"`.
-    #[serde(rename = "labelOrient")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_orient: Option<Orient>,
     /// The padding, in pixel, between facet header's label and the plot.
     ///
     /// __Default value:__ `10`
-    #[serde(rename = "labelPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_padding: Option<CornerRadiusUnion>,
@@ -21571,21 +25749,18 @@ pub struct HeaderConfig {
     #[builder(default)]
     pub title: RemovableValue<serde_json::Value>,
     /// Horizontal text alignment (to the anchor) of header titles.
-    #[serde(rename = "titleAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_align: Option<TitleAlignUnion>,
     /// The anchor position for placing the title. One of `"start"`, `"middle"`, or `"end"`. For
     /// example, with an orientation of top these anchor positions map to a left-, center-, or
     /// right-aligned title.
-    #[serde(rename = "titleAnchor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_anchor: Option<TitleAnchorEnum>,
     /// The rotation angle of the header title.
     ///
     /// __Default value:__ `0`.
-    #[serde(rename = "titleAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_angle: Option<f64>,
@@ -21595,34 +25770,28 @@ pub struct HeaderConfig {
     /// relative to the `titleLineHeight` rather than `titleFontSize` alone.
     ///
     /// __Default value:__ `"middle"`
-    #[serde(rename = "titleBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_baseline: Option<TextBaseline>,
     /// Color of the header title, can be in hex color code or regular color name.
-    #[serde(rename = "titleColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_color: Option<Box<Color>>,
     /// Font of the header title. (e.g., `"Helvetica Neue"`).
-    #[serde(rename = "titleFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font: Option<Box<Color>>,
     /// Font size of the header title.
-    #[serde(rename = "titleFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_size: Option<CornerRadiusUnion>,
     /// The font style of the header title.
-    #[serde(rename = "titleFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_style: Option<Box<Color>>,
     /// Font weight of the header title. This can be either a string (e.g `"bold"`, `"normal"`)
     /// or a number (`100`, `200`, `300`, ..., `900` where `"normal"` = `400` and `"bold"` =
     /// `700`).
-    #[serde(rename = "titleFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_weight: Option<FontWeightUnion>,
@@ -21630,25 +25799,21 @@ pub struct HeaderConfig {
     /// truncated if the rendered size exceeds the limit.
     ///
     /// __Default value:__ `0`, indicating no limit
-    #[serde(rename = "titleLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_limit: Option<CornerRadiusUnion>,
     /// Line height in pixels for multi-line header title text or title text with `"line-top"` or
     /// `"line-bottom"` baseline.
-    #[serde(rename = "titleLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_line_height: Option<CornerRadiusUnion>,
     /// The orientation of the header title. One of `"top"`, `"bottom"`, `"left"` or `"right"`.
-    #[serde(rename = "titleOrient")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_orient: Option<Orient>,
     /// The padding, in pixel, between facet header's title and the label.
     ///
     /// __Default value:__ `10`
-    #[serde(rename = "titlePadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_padding: Option<CornerRadiusUnion>,
@@ -21658,24 +25823,23 @@ pub struct HeaderConfig {
 /// [legends](https://vega.github.io/vega-lite/docs/legend.html). For a full list of legend
 /// configuration options, please see the [corresponding section of in the legend
 /// documentation](https://vega.github.io/vega-lite/docs/legend.html#config).
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct LegendConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "clipHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub clip_height: Option<CornerRadiusUnion>,
-    #[serde(rename = "columnPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub column_padding: Option<CornerRadiusUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub columns: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
@@ -21696,11 +25860,9 @@ pub struct LegendConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub disable: Option<bool>,
-    #[serde(rename = "fillColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_color: Option<Box<Color>>,
-    #[serde(rename = "gradientDirection")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_direction: Option<Direction>,
@@ -21708,7 +25870,6 @@ pub struct LegendConfig {
     /// undefined.
     ///
     /// __Default value:__ `200`
-    #[serde(rename = "gradientHorizontalMaxLength")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_horizontal_max_length: Option<f64>,
@@ -21716,35 +25877,27 @@ pub struct LegendConfig {
     /// undefined.
     ///
     /// __Default value:__ `100`
-    #[serde(rename = "gradientHorizontalMinLength")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_horizontal_min_length: Option<f64>,
-    #[serde(rename = "gradientLabelLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_label_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "gradientLabelOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_label_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "gradientLength")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_length: Option<FontSize>,
-    #[serde(rename = "gradientOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "gradientStrokeColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_stroke_color: Option<Box<Color>>,
-    #[serde(rename = "gradientStrokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_stroke_width: Option<FontSize>,
-    #[serde(rename = "gradientThickness")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_thickness: Option<FontSize>,
@@ -21752,7 +25905,6 @@ pub struct LegendConfig {
     /// undefined.
     ///
     /// __Default value:__ `200`
-    #[serde(rename = "gradientVerticalMaxLength")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_vertical_max_length: Option<f64>,
@@ -21760,51 +25912,39 @@ pub struct LegendConfig {
     /// undefined.
     ///
     /// __Default value:__ `100`
-    #[serde(rename = "gradientVerticalMinLength")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub gradient_vertical_min_length: Option<f64>,
-    #[serde(rename = "gridAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_align: Option<GridAlign>,
-    #[serde(rename = "labelAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_align: Option<TitleAlignUnion>,
-    #[serde(rename = "labelBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_baseline: Option<TextBaseline>,
-    #[serde(rename = "labelColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_color: Option<Box<Color>>,
-    #[serde(rename = "labelFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font: Option<Box<Color>>,
-    #[serde(rename = "labelFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_size: Option<FontSize>,
-    #[serde(rename = "labelFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_style: Option<Box<Color>>,
-    #[serde(rename = "labelFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_weight: Option<FontWeightUnion>,
-    #[serde(rename = "labelLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_offset: Option<FontSize>,
-    #[serde(rename = "labelOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_opacity: Option<CornerRadiusUnion>,
@@ -21815,26 +25955,21 @@ pub struct LegendConfig {
     /// better for log-scaled axes).
     ///
     /// __Default value:__ `"greedy"` for `log scales otherwise `true`.
-    #[serde(rename = "labelOverlap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_overlap: Option<LabelOverlapUnion>,
-    #[serde(rename = "labelPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_padding: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelSeparation")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_separation: Option<CornerRadiusUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub layout: Option<BackgroundExprRef>,
-    #[serde(rename = "legendX")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub legend_x: Option<CornerRadiusUnion>,
-    #[serde(rename = "legendY")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub legend_y: Option<CornerRadiusUnion>,
@@ -21852,75 +25987,57 @@ pub struct LegendConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub padding: Option<CornerRadiusUnion>,
-    #[serde(rename = "rowPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub row_padding: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_color: Option<Box<Color>>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<CornerRadiusUnion>,
-    #[serde(rename = "symbolBaseFillColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_base_fill_color: Option<Box<Color>>,
-    #[serde(rename = "symbolBaseStrokeColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_base_stroke_color: Option<Box<Color>>,
-    #[serde(rename = "symbolDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "symbolDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "symbolDirection")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_direction: Option<Direction>,
-    #[serde(rename = "symbolFillColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_fill_color: Option<Box<Color>>,
-    #[serde(rename = "symbolLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "symbolOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "symbolOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "symbolSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_size: Option<FontSize>,
-    #[serde(rename = "symbolStrokeColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_stroke_color: Option<Box<Color>>,
-    #[serde(rename = "symbolStrokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_stroke_width: Option<FontSize>,
-    #[serde(rename = "symbolType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub symbol_type: Option<Box<Color>>,
-    #[serde(rename = "tickCount")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_count: Option<TickCount>,
@@ -21928,62 +26045,48 @@ pub struct LegendConfig {
     #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
     #[builder(default)]
     pub title: RemovableValue<serde_json::Value>,
-    #[serde(rename = "titleAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_align: Option<TitleAlignUnion>,
-    #[serde(rename = "titleAnchor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_anchor: Option<TitleAnchorUnion>,
-    #[serde(rename = "titleBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_baseline: Option<TextBaseline>,
-    #[serde(rename = "titleColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_color: Option<Box<Color>>,
-    #[serde(rename = "titleFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font: Option<Box<Color>>,
-    #[serde(rename = "titleFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_size: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_style: Option<Box<Color>>,
-    #[serde(rename = "titleFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_weight: Option<FontWeightUnion>,
-    #[serde(rename = "titleLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_limit: Option<FontSize>,
-    #[serde(rename = "titleLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_line_height: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleOrient")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_orient: Option<TitleOrientUnion>,
-    #[serde(rename = "titlePadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_padding: Option<CornerRadiusUnion>,
     /// The opacity of unselected legend entries.
     ///
     /// __Default value:__ 0.35.
-    #[serde(rename = "unselectedOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub unselected_opacity: Option<f64>,
@@ -21992,10 +26095,20 @@ pub struct LegendConfig {
     pub zindex: Option<FontSize>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Direction {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(Orientation),
+}
+
 /// Line-Specific Config
 ///
 /// Trail-Specific Config
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct LineConfig {
     /// The horizontal alignment of the text or ranged marks (area, bar, image, rect, rule). One
@@ -22011,11 +26124,9 @@ pub struct LineConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "ariaRole")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role: Option<Box<Color>>,
-    #[serde(rename = "ariaRoleDescription")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role_description: Option<Box<Color>>,
@@ -22050,23 +26161,18 @@ pub struct LineConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub color: Option<MarkConfigColor>,
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_right: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_right: Option<CornerRadiusUnion>,
@@ -22088,7 +26194,6 @@ pub struct LineConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ellipsis: Option<Box<Color>>,
-    #[serde(rename = "endAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub end_angle: Option<CornerRadiusUnion>,
@@ -22111,22 +26216,18 @@ pub struct LineConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub filled: Option<bool>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<Opacity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font: Option<Box<Color>>,
-    #[serde(rename = "fontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_size: Option<FontSize>,
-    #[serde(rename = "fontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_style: Option<Box<Color>>,
-    #[serde(rename = "fontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_weight: Option<FontWeightUnion>,
@@ -22139,29 +26240,50 @@ pub struct LineConfig {
     /// The inner radius in pixels of arc marks. `innerRadius` is an alias for `radius2`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "innerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub inner_radius: Option<CornerRadiusUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub interpolate: Option<MarkConfigInterpolate>,
-    /// Defines how Vega-Lite should handle marks for invalid values (`null` and `NaN`).
-    /// - If set to `"filter"` (default), all data items with null values will be skipped (for
-    /// line, trail, and area marks) or filtered (for other marks).
-    /// - If `null`, all data items are included. In this case, invalid values will be
-    /// interpreted as zeroes.
-    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    /// Invalid data mode, which defines how the marks and corresponding scales should represent
+    /// invalid values (`null` and `NaN` in continuous scales *without* defined output for
+    /// invalid values).
+    ///
+    /// - `"filter"` — *Exclude* all invalid values from the visualization's *marks* and
+    /// *scales*. For path marks (for line, area, trail), this option will create paths that
+    /// connect valid points, as if the data rows with invalid values do not exist.
+    ///
+    /// - `"break-paths-filter-domains"` — Break path marks (for line, area, trail) at invalid
+    /// values.  For non-path marks, this is equivalent to `"filter"`. All *scale* domains will
+    /// *exclude* these filtered data points.
+    ///
+    /// - `"break-paths-show-domains"` — Break paths (for line, area, trail) at invalid values.
+    /// Hide invalid values for non-path marks. All *scale* domains will *include* these filtered
+    /// data points (for both path and non-path marks).
+    ///
+    /// - `"show"` or `null` — Show all data points in the marks and scale domains. Each scale
+    /// will use the output for invalid values defined in `config.scale.invalid` or, if
+    /// unspecified, by default invalid values will produce the same visual values as zero (if
+    /// the scale includes zero) or the minimum value (if the scale does not include zero).
+    ///
+    /// - `"break-paths-show-path-domains"` (default) — This is equivalent to
+    /// `"break-paths-show-domains"` for path-based marks (line/area/trail) and `"filter"` for
+    /// non-path marks.
+    ///
+    /// __Note__: If any channel's scale has an output for invalid values defined in
+    /// `config.scale.invalid`, all values for the scales will be considered "valid" since they
+    /// can produce a reasonable output for the scales. Thus, fields for such channels will not
+    /// be filtered and will not cause path breaks.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub invalid: RemovableValue<Invalid>,
+    pub invalid: Option<MarkInvalidDataMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "lineBreak")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_break: Option<Box<Color>>,
-    #[serde(rename = "lineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_height: Option<CornerRadiusUnion>,
@@ -22192,11 +26314,9 @@ pub struct LineConfig {
     /// The outer radius in pixels of arc marks. `outerRadius` is an alias for `radius`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "outerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub outer_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "padAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub pad_angle: Option<CornerRadiusUnion>,
@@ -22252,7 +26372,6 @@ pub struct LineConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub smooth: Option<Aria>,
-    #[serde(rename = "startAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub start_angle: Option<CornerRadiusUnion>,
@@ -22263,35 +26382,27 @@ pub struct LineConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke: Option<MarkConfigFill>,
-    #[serde(rename = "strokeCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_cap: Option<Cap>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeJoin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_join: Option<StrokeJoinUnion>,
-    #[serde(rename = "strokeMiterLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_miter_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<Opacity>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<FontSize>,
@@ -22314,17 +26425,18 @@ pub struct LineConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta2: Option<CornerRadiusUnion>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<CornerRadiusUnion>,
     /// Default relative band position for a time unit. If set to `0`, the marks will be
     /// positioned at the beginning of the time unit band step. If set to `0.5`, the marks will
     /// be positioned in the middle of the time unit band step.
-    #[serde(rename = "timeUnitBandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_position: Option<f64>,
     /// Default relative band size for a time unit. If set to `1`, the bandwidth of the marks
     /// will be equal to the time unit band step. If set to `0.5`, bandwidth of the marks will be
     /// half of the time unit band step.
-    #[serde(rename = "timeUnitBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_size: Option<f64>,
@@ -22432,7 +26544,9 @@ pub struct NumberLocale {
 }
 
 /// Locale definition for formatting dates and times.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct TimeLocale {
     /// The date (%x) format specifier (e.g., "%m/%d/%Y").
@@ -22440,7 +26554,6 @@ pub struct TimeLocale {
     #[builder(default)]
     pub date: Option<String>,
     /// The date and time (%c) format specifier (e.g., "%a %b %e %X %Y").
-    #[serde(rename = "dateTime")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub date_time: Option<String>,
@@ -22451,10 +26564,8 @@ pub struct TimeLocale {
     /// The A.M. and P.M. equivalents (e.g., ["AM", "PM"]).
     pub periods: Vec<String>,
     /// The abbreviated names of the weekdays, starting with Sunday.
-    #[serde(rename = "shortDays")]
     pub short_days: Vec<String>,
     /// The abbreviated names of the months (starting with January).
-    #[serde(rename = "shortMonths")]
     pub short_months: Vec<String>,
     /// The time (%X) format specifier (e.g., "%H:%M:%S").
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -22462,6 +26573,24 @@ pub struct TimeLocale {
     pub time: Option<String>,
 }
 
+/// The default visualization padding, in pixels, from the edge of the visualization canvas
+/// to the data rectangle. If a number, specifies padding for all sides. If an object, the
+/// value should have the format `{"left": 5, "top": 5, "right": 5, "bottom": 5}` to specify
+/// padding for each side of the visualization.
+///
+/// __Default value__: `5`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum Padding {
+    Double(f64),
+    MagentaExprRef(MagentaExprRef),
+}
+
+/// An expression for an array of raw values that, if non-null, directly overrides the
+/// _domain_ property. This is useful for supporting interactions such as panning or zooming
+/// a scale. The scale may be initially determined using a data-driven domain, then modified
+/// in response to user input by setting the rawDomain value.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct MagentaExprRef {
@@ -22524,6 +26653,15 @@ pub struct TopLevelParameter {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub name: Option<String>,
+    /// A boolean flag (default `true`) indicating if the update expression should be
+    /// automatically re-evaluated when any upstream signal dependencies update. If `false`, the
+    /// update expression will not register any dependencies on other signals, even for
+    /// initialization.
+    ///
+    /// __Default value:__ `true`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub react: Option<bool>,
     /// The [initial value](http://vega.github.io/vega-lite/docs/value.html) of the parameter.
     ///
     /// __Default value:__ `undefined`
@@ -22548,7 +26686,25 @@ pub struct TopLevelParameter {
     /// property is specified, selections will only be applied to views with the given names.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub views: Option<Vec<TextElement>>,
+    pub views: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TopLevelParameterBind {
+    Enum(LegendBinding),
+    UnionMap(HashMap<String, BindingValue>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum BindingValue {
+    AnythingArray(Vec<Option<serde_json::Value>>),
+    BindingBinding(BindingBinding),
+    Double(f64),
+    String(String),
 }
 
 /// Binds the parameter to an external input element such as a slider, selection list or
@@ -22654,6 +26810,29 @@ pub struct BindingBinding {
     pub merge: Option<Vec<Stream>>,
 }
 
+/// Determines the default event processing and data query for the selection. Vega-Lite
+/// currently supports two selection types:
+///
+/// - `"point"` -- to select multiple discrete data values; the first value is selected on
+/// `click` and additional values toggled on shift-click.
+/// - `"interval"` -- to select a continuous range of data values on `drag`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum TopLevelParameterSelect {
+    Enum(SelectionType),
+    SelectionConfig(SelectionConfig),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum RangeValue {
+    AnythingArray(Vec<Option<serde_json::Value>>),
+    Enum(RangeEnum),
+    RangeClass(RangeClass),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct RangeClass {
@@ -22665,23 +26844,76 @@ pub struct RangeClass {
     pub extent: Option<Vec<f64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub scheme: Option<TextElement>,
+    pub scheme: Option<RangeText>,
+}
+
+/// A string or array of strings indicating the name of custom styles to apply to the mark. A
+/// style is a named collection of mark property defaults defined within the [style
+/// configuration](https://vega.github.io/vega-lite/docs/mark.html#style-config). If style is
+/// an array, later styles will override earlier styles. Any [mark
+/// properties](https://vega.github.io/vega-lite/docs/encoding.html#mark-prop) explicitly
+/// defined within the `encoding` will override a style default.
+///
+/// __Default value:__ The mark's name. For example, a bar mark will have style `"bar"` by
+/// default. __Note:__ Any specified style will augment the default style. For example, a bar
+/// mark with `"style": "foo"` will receive from `config.style.bar` and `config.style.foo`
+/// (the specified style `"foo"` has higher precedence).
+///
+/// A string or array of strings indicating the name of custom styles to apply to the axis. A
+/// style is a named collection of axis property defined within the [style
+/// configuration](https://vega.github.io/vega-lite/docs/mark.html#style-config). If style is
+/// an array, later styles will override earlier styles.
+///
+/// __Default value:__ (none) __Note:__ Any specified style will augment the default style.
+/// For example, an x-axis mark with `"style": "foo"` will use `config.axisX` and
+/// `config.style.foo` (the specified style `"foo"` has higher precedence).
+///
+/// A [mark style property](https://vega.github.io/vega-lite/docs/config.html#style) to apply
+/// to the title text mark.
+///
+/// __Default value:__ `"group-title"`.
+///
+/// Placeholder text if the `text` channel is not specified
+///
+/// The subtitle Text.
+///
+/// A string or array of strings indicating the name of custom styles to apply to the view
+/// background. A style is a named collection of mark property defaults defined within the
+/// [style configuration](https://vega.github.io/vega-lite/docs/mark.html#style-config). If
+/// style is an array, later styles will override earlier styles.
+///
+/// __Default value:__ `"cell"` __Note:__ Any specified view background properties will
+/// augment the default style.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum RangeText {
+    String(String),
+    StringArray(Vec<String>),
 }
 
 /// Scale configuration determines default properties for all
 /// [scales](https://vega.github.io/vega-lite/docs/scale.html). For a full list of scale
 /// configuration options, please see the [corresponding section of the scale
 /// documentation](https://vega.github.io/vega-lite/docs/scale.html#config).
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ScaleConfig {
+    /// Default animation duration (in seconds) for time encodings, except for
+    /// [`band`](https://vega.github.io/vega-lite/docs/scale.html#band) scales.
+    ///
+    /// __Default value:__ `5`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub animation_duration: Option<f64>,
     /// Default inner padding for `x` and `y` band scales.
     ///
     /// __Default value:__
     /// - `nestedOffsetPaddingInner` for x/y scales with nested x/y offset scales.
     /// - `barBandPaddingInner` for bar marks (`0.1` by default)
     /// - `rectBandPaddingInner` for rect and other marks (`0` by default)
-    #[serde(rename = "bandPaddingInner")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_padding_inner: Option<CornerRadiusUnion>,
@@ -22689,7 +26921,6 @@ pub struct ScaleConfig {
     ///
     /// __Default value:__ `paddingInner/2` (which makes _width/height = number of unique values
     /// * step_)
-    #[serde(rename = "bandPaddingOuter")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_padding_outer: Option<CornerRadiusUnion>,
@@ -22697,7 +26928,6 @@ pub struct ScaleConfig {
     /// encoding.
     ///
     /// __Default value:__ `0.2`
-    #[serde(rename = "bandWithNestedOffsetPaddingInner")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_with_nested_offset_padding_inner: Option<CornerRadiusUnion>,
@@ -22705,14 +26935,12 @@ pub struct ScaleConfig {
     /// encoding.
     ///
     /// __Default value:__ `0.2`
-    #[serde(rename = "bandWithNestedOffsetPaddingOuter")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_with_nested_offset_padding_outer: Option<CornerRadiusUnion>,
     /// Default inner padding for `x` and `y` band-ordinal scales of `"bar"` marks.
     ///
     /// __Default value:__ `0.1`
-    #[serde(rename = "barBandPaddingInner")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub bar_band_padding_inner: Option<CornerRadiusUnion>,
@@ -22725,33 +26953,49 @@ pub struct ScaleConfig {
     ///
     /// __Default:__ The bar width for continuous x-scale of a vertical bar and continuous
     /// y-scale of a horizontal bar.; `0` otherwise.
-    #[serde(rename = "continuousPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub continuous_padding: Option<CornerRadiusUnion>,
+    /// Default framerate (frames per second) for time
+    /// [`band`](https://vega.github.io/vega-lite/docs/scale.html#band) scales.
+    ///
+    /// __Default value:__ `2`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub frames_per_second: Option<f64>,
+    /// An object that defines scale outputs per channel for invalid values (nulls and NaNs on a
+    /// continuous scale).
+    /// - The keys in this object are the scale channels.
+    /// - The values is either `"zero-or-min"` (use zero if the scale includes zero or min value
+    /// otherwise) or a value definition `{value: ...}`.
+    ///
+    /// _Example:_ Setting this `config.scale.invalid` property to `{color: {value: '#aaa'}}`
+    /// will make the visualization color all invalid values with '#aaa'.
+    ///
+    /// See [https://vega.github.io/vega-lite/docs/invalid-data.html](Invalid Data Docs) for more
+    /// details.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub invalid: Option<ScaleInvalidDataConfig>,
     /// The default max value for mapping quantitative fields to bar's size/bandSize.
     ///
     /// If undefined (default), we will use the axis's size (width or height) - 1.
-    #[serde(rename = "maxBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub max_band_size: Option<f64>,
-    /// The default max value for mapping quantitative fields to text's size/fontSize.
+    /// The default max value for mapping quantitative fields to text's size/fontSize scale.
     ///
     /// __Default value:__ `40`
-    #[serde(rename = "maxFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub max_font_size: Option<f64>,
     /// Default max opacity for mapping a field to opacity.
     ///
     /// __Default value:__ `0.8`
-    #[serde(rename = "maxOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub max_opacity: Option<f64>,
     /// Default max value for point size scale.
-    #[serde(rename = "maxSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub max_size: Option<f64>,
@@ -22759,66 +27003,56 @@ pub struct ScaleConfig {
     /// for trail marks.
     ///
     /// __Default value:__ `4`
-    #[serde(rename = "maxStrokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub max_stroke_width: Option<f64>,
     /// The default min value for mapping quantitative fields to bar and tick's size/bandSize
-    /// scale with zero=false.
+    /// scale.
     ///
     /// __Default value:__ `2`
-    #[serde(rename = "minBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub min_band_size: Option<f64>,
-    /// The default min value for mapping quantitative fields to tick's size/fontSize scale with
-    /// zero=false
+    /// The default min value for mapping quantitative fields to text's size/fontSize scale.
     ///
     /// __Default value:__ `8`
-    #[serde(rename = "minFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub min_font_size: Option<f64>,
     /// Default minimum opacity for mapping a field to opacity.
     ///
     /// __Default value:__ `0.3`
-    #[serde(rename = "minOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub min_opacity: Option<f64>,
-    /// Default minimum value for point size scale with zero=false.
+    /// Default minimum value for point size scale.
     ///
     /// __Default value:__ `9`
-    #[serde(rename = "minSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub min_size: Option<f64>,
     /// Default minimum strokeWidth for the scale of strokeWidth for rule and line marks and of
-    /// size for trail marks with zero=false.
+    /// size for trail marks.
     ///
     /// __Default value:__ `1`
-    #[serde(rename = "minStrokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub min_stroke_width: Option<f64>,
     /// Default padding inner for xOffset/yOffset's band scales.
     ///
     /// __Default Value:__ `0`
-    #[serde(rename = "offsetBandPaddingInner")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub offset_band_padding_inner: Option<CornerRadiusUnion>,
     /// Default padding outer for xOffset/yOffset's band scales.
     ///
     /// __Default Value:__ `0`
-    #[serde(rename = "offsetBandPaddingOuter")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub offset_band_padding_outer: Option<CornerRadiusUnion>,
     /// Default outer padding for `x` and `y` point-ordinal scales.
     ///
     /// __Default value:__ `0.5` (which makes _width/height = number of unique values * step_)
-    #[serde(rename = "pointPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub point_padding: Option<CornerRadiusUnion>,
@@ -22826,7 +27060,6 @@ pub struct ScaleConfig {
     /// [`quantile`](https://vega.github.io/vega-lite/docs/scale.html#quantile) scale.
     ///
     /// __Default value:__ `4`
-    #[serde(rename = "quantileCount")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub quantile_count: Option<f64>,
@@ -22834,14 +27067,12 @@ pub struct ScaleConfig {
     /// [`quantize`](https://vega.github.io/vega-lite/docs/scale.html#quantize) scale.
     ///
     /// __Default value:__ `4`
-    #[serde(rename = "quantizeCount")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub quantize_count: Option<f64>,
     /// Default inner padding for `x` and `y` band-ordinal scales of `"rect"` marks.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "rectBandPaddingInner")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub rect_band_padding_inner: Option<CornerRadiusUnion>,
@@ -22850,6 +27081,12 @@ pub struct ScaleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub round: Option<Aria>,
+    /// Default inner padding for `x` and `y` band-ordinal scales of `"tick"` marks.
+    ///
+    /// __Default value:__ `0.25`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub tick_band_padding_inner: Option<CornerRadiusUnion>,
     /// Use the source data range before aggregation as scale domain instead of aggregated data
     /// for aggregate axis.
     ///
@@ -22862,12 +27099,10 @@ pub struct ScaleConfig {
     /// `"sum"`), this property is ignored.
     ///
     /// __Default value:__ `false`
-    #[serde(rename = "useUnaggregatedDomain")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub use_unaggregated_domain: Option<bool>,
     /// Reverse x-scale by default (useful for right-to-left charts).
-    #[serde(rename = "xReverse")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub x_reverse: Option<Aria>,
@@ -22879,6 +27114,648 @@ pub struct ScaleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub zero: Option<bool>,
+}
+
+/// An object that defines scale outputs per channel for invalid values (nulls and NaNs on a
+/// continuous scale).
+/// - The keys in this object are the scale channels.
+/// - The values is either `"zero-or-min"` (use zero if the scale includes zero or min value
+/// otherwise) or a value definition `{value: ...}`.
+///
+/// _Example:_ Setting this `config.scale.invalid` property to `{color: {value: '#aaa'}}`
+/// will make the visualization color all invalid values with '#aaa'.
+///
+/// See [https://vega.github.io/vega-lite/docs/invalid-data.html](Invalid Data Docs) for more
+/// details.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub angle: Option<ScaleInvalidDataShowAsAngle>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub color: Option<ScaleInvalidDataShowAsColor>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub fill: Option<ScaleInvalidDataShowAsFill>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub fill_opacity: Option<ScaleInvalidDataShowAsFillOpacity>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub opacity: Option<ScaleInvalidDataShowAsOpacity>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub radius: Option<ScaleInvalidDataShowAsRadius>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub shape: Option<ScaleInvalidDataShowAsShape>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub size: Option<ScaleInvalidDataShowAsSize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub stroke: Option<ScaleInvalidDataShowAsStroke>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub stroke_dash: Option<ScaleInvalidDataShowAsStrokeDash>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub stroke_opacity: Option<ScaleInvalidDataShowAsStrokeOpacity>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub stroke_width: Option<ScaleInvalidDataShowAsStrokeWidth>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub theta: Option<ScaleInvalidDataShowAsTheta>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<ScaleInvalidDataShowAsTime>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub x: Option<ScaleInvalidDataShowAsX>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub x_offset: Option<ScaleInvalidDataShowAsXOffset>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub y: Option<ScaleInvalidDataShowAsY>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub y_offset: Option<ScaleInvalidDataShowAsYOffset>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsAngle {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueAngle(ScaleInvalidDataShowAsValueAngle),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueAngle {
+    /// The rotation angle of the text, in degrees.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ScaleInvalidDataShowAs {
+    #[serde(rename = "zero-or-min")]
+    ZeroOrMin,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsColor {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueColor(ScaleInvalidDataShowAsValueColor),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueColor {
+    /// Default color.
+    ///
+    /// __Default value:__ <span style="color: #4682b4;">&#9632;</span> `"#4682b4"`
+    ///
+    /// __Note:__
+    /// - This property cannot be used in a [style
+    /// config](https://vega.github.io/vega-lite/docs/mark.html#style-config).
+    /// - The `fill` and `stroke` properties have higher precedence than `color` and will
+    /// override `color`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<ScaleInvalidDataShowAsValueColorValue>,
+}
+
+/// Default color.
+///
+/// __Default value:__ <span style="color: #4682b4;">&#9632;</span> `"#4682b4"`
+///
+/// __Note:__
+/// - This property cannot be used in a [style
+/// config](https://vega.github.io/vega-lite/docs/mark.html#style-config).
+/// - The `fill` and `stroke` properties have higher precedence than `color` and will
+/// override `color`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsValueColorValue {
+    PurpleGradient(PurpleGradient),
+    String(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct PurpleGradient {
+    /// The type of gradient. Use `"linear"` for a linear gradient.
+    ///
+    /// The type of gradient. Use `"radial"` for a radial gradient.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub gradient: Option<Gradient>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub id: Option<String>,
+    /// An array of gradient stops defining the gradient color sequence.
+    pub stops: Vec<GradientStop>,
+    /// The starting x-coordinate, in normalized [0, 1] coordinates, of the linear gradient.
+    ///
+    /// __Default value:__ `0`
+    ///
+    /// The x-coordinate, in normalized [0, 1] coordinates, for the center of the inner circle
+    /// for the gradient.
+    ///
+    /// __Default value:__ `0.5`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub x1: Option<f64>,
+    /// The ending x-coordinate, in normalized [0, 1] coordinates, of the linear gradient.
+    ///
+    /// __Default value:__ `1`
+    ///
+    /// The x-coordinate, in normalized [0, 1] coordinates, for the center of the outer circle
+    /// for the gradient.
+    ///
+    /// __Default value:__ `0.5`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub x2: Option<f64>,
+    /// The starting y-coordinate, in normalized [0, 1] coordinates, of the linear gradient.
+    ///
+    /// __Default value:__ `0`
+    ///
+    /// The y-coordinate, in normalized [0, 1] coordinates, for the center of the inner circle
+    /// for the gradient.
+    ///
+    /// __Default value:__ `0.5`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub y1: Option<f64>,
+    /// The ending y-coordinate, in normalized [0, 1] coordinates, of the linear gradient.
+    ///
+    /// __Default value:__ `0`
+    ///
+    /// The y-coordinate, in normalized [0, 1] coordinates, for the center of the outer circle
+    /// for the gradient.
+    ///
+    /// __Default value:__ `0.5`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub y2: Option<f64>,
+    /// The radius length, in normalized [0, 1] coordinates, of the inner circle for the
+    /// gradient.
+    ///
+    /// __Default value:__ `0`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub r1: Option<f64>,
+    /// The radius length, in normalized [0, 1] coordinates, of the outer circle for the
+    /// gradient.
+    ///
+    /// __Default value:__ `0.5`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub r2: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsFill {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueFill(ScaleInvalidDataShowAsValueFill),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueFill {
+    /// Default fill color. This property has higher precedence than `config.color`. Set to
+    /// `null` to remove fill.
+    ///
+    /// __Default value:__ (None)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<ScaleInvalidDataShowAsValueFillValue>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsValueFillValue {
+    FluffyGradient(FluffyGradient),
+    String(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct FluffyGradient {
+    /// The type of gradient. Use `"linear"` for a linear gradient.
+    ///
+    /// The type of gradient. Use `"radial"` for a radial gradient.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub gradient: Option<Gradient>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub id: Option<String>,
+    /// An array of gradient stops defining the gradient color sequence.
+    pub stops: Vec<GradientStop>,
+    /// The starting x-coordinate, in normalized [0, 1] coordinates, of the linear gradient.
+    ///
+    /// __Default value:__ `0`
+    ///
+    /// The x-coordinate, in normalized [0, 1] coordinates, for the center of the inner circle
+    /// for the gradient.
+    ///
+    /// __Default value:__ `0.5`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub x1: Option<f64>,
+    /// The ending x-coordinate, in normalized [0, 1] coordinates, of the linear gradient.
+    ///
+    /// __Default value:__ `1`
+    ///
+    /// The x-coordinate, in normalized [0, 1] coordinates, for the center of the outer circle
+    /// for the gradient.
+    ///
+    /// __Default value:__ `0.5`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub x2: Option<f64>,
+    /// The starting y-coordinate, in normalized [0, 1] coordinates, of the linear gradient.
+    ///
+    /// __Default value:__ `0`
+    ///
+    /// The y-coordinate, in normalized [0, 1] coordinates, for the center of the inner circle
+    /// for the gradient.
+    ///
+    /// __Default value:__ `0.5`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub y1: Option<f64>,
+    /// The ending y-coordinate, in normalized [0, 1] coordinates, of the linear gradient.
+    ///
+    /// __Default value:__ `0`
+    ///
+    /// The y-coordinate, in normalized [0, 1] coordinates, for the center of the outer circle
+    /// for the gradient.
+    ///
+    /// __Default value:__ `0.5`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub y2: Option<f64>,
+    /// The radius length, in normalized [0, 1] coordinates, of the inner circle for the
+    /// gradient.
+    ///
+    /// __Default value:__ `0`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub r1: Option<f64>,
+    /// The radius length, in normalized [0, 1] coordinates, of the outer circle for the
+    /// gradient.
+    ///
+    /// __Default value:__ `0.5`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub r2: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsFillOpacity {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueFillOpacity(ScaleInvalidDataShowAsValueFillOpacity),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueFillOpacity {
+    /// The fill opacity (value between [0,1]).
+    ///
+    /// __Default value:__ `1`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsOpacity {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueOpacity(ScaleInvalidDataShowAsValueOpacity),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueOpacity {
+    /// The overall opacity (value between [0,1]).
+    ///
+    /// __Default value:__ `0.7` for non-aggregate plots with `point`, `tick`, `circle`, or
+    /// `square` marks or layered `bar` charts and `1` otherwise.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsRadius {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueRadius(ScaleInvalidDataShowAsValueRadius),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueRadius {
+    /// For arc mark, the primary (outer) radius in pixels.
+    ///
+    /// For text marks, polar coordinate radial offset, in pixels, of the text from the origin
+    /// determined by the `x` and `y` properties.
+    ///
+    /// __Default value:__ `min(plot_width, plot_height)/2`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsShape {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueShape(ScaleInvalidDataShowAsValueShape),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueShape {
+    /// Shape of the point marks. Supported values include:
+    /// - plotting shapes: `"circle"`, `"square"`, `"cross"`, `"diamond"`, `"triangle-up"`,
+    /// `"triangle-down"`, `"triangle-right"`, or `"triangle-left"`.
+    /// - the line symbol `"stroke"`
+    /// - centered directional shapes `"arrow"`, `"wedge"`, or `"triangle"`
+    /// - a custom [SVG path
+    /// string](https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths) (For correct
+    /// sizing, custom shape paths should be defined within a square bounding box with
+    /// coordinates ranging from -1 to 1 along both the x and y dimensions.)
+    ///
+    /// __Default value:__ `"circle"`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsSize {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueSize(ScaleInvalidDataShowAsValueSize),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueSize {
+    /// Default size for marks.
+    /// - For `point`/`circle`/`square`, this represents the pixel area of the marks. Note that
+    /// this value sets the area of the symbol; the side lengths will increase with the square
+    /// root of this value.
+    /// - For `bar`, this represents the band size of the bar, in pixels.
+    /// - For `text`, this represents the font size, in pixels.
+    ///
+    /// __Default value:__
+    /// - `30` for point, circle, square marks; width/height's `step`
+    /// - `2` for bar marks with discrete dimensions;
+    /// - `5` for bar marks with continuous dimensions;
+    /// - `11` for text marks.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsStroke {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueStroke(ScaleInvalidDataShowAsValueStroke),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueStroke {
+    /// Default stroke color. This property has higher precedence than `config.color`. Set to
+    /// `null` to remove stroke.
+    ///
+    /// __Default value:__ (None)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<ScaleInvalidDataShowAsValueFillValue>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsStrokeDash {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueStrokeDash(ScaleInvalidDataShowAsValueStrokeDash),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueStrokeDash {
+    /// An array of alternating stroke, space lengths for creating dashed or dotted lines.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<Vec<f64>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsStrokeOpacity {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueStrokeOpacity(ScaleInvalidDataShowAsValueStrokeOpacity),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueStrokeOpacity {
+    /// The stroke opacity (value between [0,1]).
+    ///
+    /// __Default value:__ `1`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsStrokeWidth {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueStrokeWidth(ScaleInvalidDataShowAsValueStrokeWidth),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueStrokeWidth {
+    /// The stroke width, in pixels.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsTheta {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueTheta(ScaleInvalidDataShowAsValueTheta),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueTheta {
+    /// - For arc marks, the arc length in radians if theta2 is not specified, otherwise the
+    /// start arc angle. (A value of 0 indicates up or “north”, increasing values proceed
+    /// clockwise.)
+    ///
+    /// - For text marks, polar coordinate angle in radians.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsTime {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueTime(ScaleInvalidDataShowAsValueTime),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueTime {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsX {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueX(ScaleInvalidDataShowAsValueX),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueX {
+    /// X coordinates of the marks, or width of horizontal `"bar"` and `"area"` without specified
+    /// `x2` or `width`.
+    ///
+    /// The `value` of this channel can be a number or a string `"width"` for the width of the
+    /// plot.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<ScaleInvalidDataShowAsValueXValue>,
+}
+
+/// X coordinates of the marks, or width of horizontal `"bar"` and `"area"` without specified
+/// `x2` or `width`.
+///
+/// The `value` of this channel can be a number or a string `"width"` for the width of the
+/// plot.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsValueXValue {
+    Double(f64),
+    Enum(XEnum),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsXOffset {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueXOffset(ScaleInvalidDataShowAsValueXOffset),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueXOffset {
+    /// Offset for x-position.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsY {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueY(ScaleInvalidDataShowAsValueY),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueY {
+    /// Y coordinates of the marks, or height of vertical `"bar"` and `"area"` without specified
+    /// `y2` or `height`.
+    ///
+    /// The `value` of this channel can be a number or a string `"height"` for the height of the
+    /// plot.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<ScaleInvalidDataShowAsValueYValue>,
+}
+
+/// Y coordinates of the marks, or height of vertical `"bar"` and `"area"` without specified
+/// `y2` or `height`.
+///
+/// The `value` of this channel can be a number or a string `"height"` for the height of the
+/// plot.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsValueYValue {
+    Double(f64),
+    Enum(YEnum),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum ScaleInvalidDataShowAsYOffset {
+    Enum(ScaleInvalidDataShowAs),
+    ScaleInvalidDataShowAsValueYOffset(ScaleInvalidDataShowAsValueYOffset),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct ScaleInvalidDataShowAsValueYOffset {
+    /// Offset for y-position.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub value: Option<f64>,
 }
 
 /// An object hash for defining default properties for each type of selections.
@@ -22936,6 +27813,15 @@ pub struct IntervalSelectionConfigWithoutType {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub encodings: Option<Vec<SingleDefUnitChannel>>,
+    /// An array of field names whose values must match for a data tuple to fall within the
+    /// selection.
+    ///
+    /// __See also:__ The [projection with `encodings` and `fields`
+    /// section](https://vega.github.io/vega-lite/docs/selection.html#project) in the
+    /// documentation.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub fields: Option<Vec<String>>,
     /// An interval selection also adds a rectangle mark to depict the extents of the interval.
     /// The `mark` property can be used to customize the appearance of the mark.
     ///
@@ -22980,8 +27866,8 @@ pub struct IntervalSelectionConfigWithoutType {
     /// and end event to trigger continuous panning. Discrete panning (e.g., pressing the
     /// left/right arrow keys) will be supported in future versions.
     ///
-    /// __Default value:__ `true`, which corresponds to `[mousedown, window:mouseup] >
-    /// window:mousemove!`. This default allows users to clicks and drags within an interval
+    /// __Default value:__ `true`, which corresponds to `[pointerdown, window:pointerup] >
+    /// window:pointermove!`. This default allows users to clicks and drags within an interval
     /// selection to reposition it.
     ///
     /// __See also:__ [`translate`
@@ -23148,7 +28034,9 @@ pub struct PointSelectionConfigWithoutType {
 /// Trail-Specific Config
 ///
 /// Tick-Specific Config
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct StyleValue {
     /// The horizontal alignment of the text or ranged marks (area, bar, image, rect, rule). One
@@ -23164,11 +28052,9 @@ pub struct StyleValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "ariaRole")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role: Option<Box<Color>>,
-    #[serde(rename = "ariaRoleDescription")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role_description: Option<Box<Color>>,
@@ -23192,7 +28078,6 @@ pub struct StyleValue {
     /// statisticians) or 1 (Vega-Lite default, D3 example style).
     ///
     /// __Default value:__ `1`
-    #[serde(rename = "binSpacing")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub bin_spacing: Option<f64>,
@@ -23214,27 +28099,21 @@ pub struct StyleValue {
     /// The default size of the bars on continuous scales.
     ///
     /// __Default value:__ `5`
-    #[serde(rename = "continuousBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub continuous_band_size: Option<f64>,
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_right: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_right: Option<CornerRadiusUnion>,
@@ -23249,7 +28128,6 @@ pub struct StyleValue {
     pub dir: Option<Dir>,
     /// The default size of the bars with discrete dimensions. If unspecified, the default size
     /// is  `step-2`, which provides 2 pixel offset between bars.
-    #[serde(rename = "discreteBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub discrete_band_size: Option<DiscreteBandSize>,
@@ -23262,7 +28140,6 @@ pub struct StyleValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ellipsis: Option<Box<Color>>,
-    #[serde(rename = "endAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub end_angle: Option<CornerRadiusUnion>,
@@ -23285,22 +28162,18 @@ pub struct StyleValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub filled: Option<bool>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<Opacity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font: Option<Box<Color>>,
-    #[serde(rename = "fontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_size: Option<FontSize>,
-    #[serde(rename = "fontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_style: Option<Box<Color>>,
-    #[serde(rename = "fontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_weight: Option<FontWeightUnion>,
@@ -23313,32 +28186,57 @@ pub struct StyleValue {
     /// The inner radius in pixels of arc marks. `innerRadius` is an alias for `radius2`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "innerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub inner_radius: Option<CornerRadiusUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub interpolate: Option<MarkConfigInterpolate>,
-    /// Defines how Vega-Lite should handle marks for invalid values (`null` and `NaN`).
-    /// - If set to `"filter"` (default), all data items with null values will be skipped (for
-    /// line, trail, and area marks) or filtered (for other marks).
-    /// - If `null`, all data items are included. In this case, invalid values will be
-    /// interpreted as zeroes.
-    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    /// Invalid data mode, which defines how the marks and corresponding scales should represent
+    /// invalid values (`null` and `NaN` in continuous scales *without* defined output for
+    /// invalid values).
+    ///
+    /// - `"filter"` — *Exclude* all invalid values from the visualization's *marks* and
+    /// *scales*. For path marks (for line, area, trail), this option will create paths that
+    /// connect valid points, as if the data rows with invalid values do not exist.
+    ///
+    /// - `"break-paths-filter-domains"` — Break path marks (for line, area, trail) at invalid
+    /// values.  For non-path marks, this is equivalent to `"filter"`. All *scale* domains will
+    /// *exclude* these filtered data points.
+    ///
+    /// - `"break-paths-show-domains"` — Break paths (for line, area, trail) at invalid values.
+    /// Hide invalid values for non-path marks. All *scale* domains will *include* these filtered
+    /// data points (for both path and non-path marks).
+    ///
+    /// - `"show"` or `null` — Show all data points in the marks and scale domains. Each scale
+    /// will use the output for invalid values defined in `config.scale.invalid` or, if
+    /// unspecified, by default invalid values will produce the same visual values as zero (if
+    /// the scale includes zero) or the minimum value (if the scale does not include zero).
+    ///
+    /// - `"break-paths-show-path-domains"` (default) — This is equivalent to
+    /// `"break-paths-show-domains"` for path-based marks (line/area/trail) and `"filter"` for
+    /// non-path marks.
+    ///
+    /// __Note__: If any channel's scale has an output for invalid values defined in
+    /// `config.scale.invalid`, all values for the scales will be considered "valid" since they
+    /// can produce a reasonable output for the scales. Thus, fields for such channels will not
+    /// be filtered and will not cause path breaks.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub invalid: RemovableValue<Invalid>,
+    pub invalid: Option<MarkInvalidDataMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "lineBreak")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_break: Option<Box<Color>>,
-    #[serde(rename = "lineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_height: Option<CornerRadiusUnion>,
+    /// The minimum band size for bar and rectangle marks. __Default value:__ `0.25`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub min_band_size: Option<CornerRadiusUnion>,
     /// The overall opacity (value between [0,1]).
     ///
     /// __Default value:__ `0.7` for non-aggregate plots with `point`, `tick`, `circle`, or
@@ -23372,11 +28270,9 @@ pub struct StyleValue {
     /// The outer radius in pixels of arc marks. `outerRadius` is an alias for `radius`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "outerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub outer_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "padAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub pad_angle: Option<CornerRadiusUnion>,
@@ -23416,7 +28312,6 @@ pub struct StyleValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub smooth: Option<Aria>,
-    #[serde(rename = "startAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub start_angle: Option<CornerRadiusUnion>,
@@ -23427,35 +28322,27 @@ pub struct StyleValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke: Option<MarkConfigFill>,
-    #[serde(rename = "strokeCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_cap: Option<Cap>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeJoin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_join: Option<StrokeJoinUnion>,
-    #[serde(rename = "strokeMiterLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_miter_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<Opacity>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<FontSize>,
@@ -23479,17 +28366,18 @@ pub struct StyleValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub theta2: Option<CornerRadiusUnion>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<CornerRadiusUnion>,
     /// Default relative band position for a time unit. If set to `0`, the marks will be
     /// positioned at the beginning of the time unit band step. If set to `0.5`, the marks will
     /// be positioned in the middle of the time unit band step.
-    #[serde(rename = "timeUnitBandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_position: Option<f64>,
     /// Default relative band size for a time unit. If set to `1`, the bandwidth of the marks
     /// will be equal to the time unit band step. If set to `0.5`, bandwidth of the marks will be
     /// half of the time unit band step.
-    #[serde(rename = "timeUnitBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_size: Option<f64>,
@@ -23580,7 +28468,6 @@ pub struct StyleValue {
     /// - For vertical bars, top-left and top-right corner radius.
     ///
     /// - For horizontal bars, top-right and bottom-right corner radius.
-    #[serde(rename = "cornerRadiusEnd")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_end: Option<CornerRadiusUnion>,
@@ -23588,7 +28475,6 @@ pub struct StyleValue {
     ///
     /// __Default value:__  3/4 of step (width step for horizontal ticks and height step for
     /// vertical ticks).
-    #[serde(rename = "bandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_size: Option<f64>,
@@ -23598,7 +28484,6 @@ pub struct StyleValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub thickness: Option<f64>,
-    #[serde(rename = "bandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_position: Option<CornerRadiusUnion>,
@@ -23609,27 +28494,21 @@ pub struct StyleValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain: Option<bool>,
-    #[serde(rename = "domainCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_cap: Option<Cap>,
-    #[serde(rename = "domainColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_color: Option<Box<Color>>,
-    #[serde(rename = "domainDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "domainDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "domainOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "domainWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub domain_width: Option<CornerRadiusUnion>,
@@ -23663,7 +28542,6 @@ pub struct StyleValue {
     /// - `"time"` for temporal fields and ordinal and nominal fields with `timeUnit`.
     /// - `"number"` for quantitative fields as well as ordinal and nominal fields without
     /// `timeUnit`.
-    #[serde(rename = "formatType")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub format_type: Option<String>,
@@ -23675,47 +28553,36 @@ pub struct StyleValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid: Option<bool>,
-    #[serde(rename = "gridCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_cap: Option<Cap>,
-    #[serde(rename = "gridColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_color: Option<GridColorUnion>,
-    #[serde(rename = "gridDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_dash: Option<AxisGridDash>,
-    #[serde(rename = "gridDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_dash_offset: Option<GridDashOffsetUnion>,
-    #[serde(rename = "gridOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_opacity: Option<GridOpacityUnion>,
-    #[serde(rename = "gridWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub grid_width: Option<GridWidthUnion>,
-    #[serde(rename = "labelAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_align: Option<ConditionalAxisPropertyAlignNull>,
-    #[serde(rename = "labelAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_angle: Option<LabelAngle>,
-    #[serde(rename = "labelBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_baseline: Option<PurpleTextBaseline>,
-    #[serde(rename = "labelBound")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_bound: Option<Label>,
-    #[serde(rename = "labelColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_color: Option<GridColorUnion>,
@@ -23723,7 +28590,6 @@ pub struct StyleValue {
     ///
     /// __Note:__ The label text and value can be assessed via the `label` and `value` properties
     /// of the axis's backing `datum` object.
-    #[serde(rename = "labelExpr")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_expr: Option<String>,
@@ -23736,43 +28602,33 @@ pub struct StyleValue {
     /// can sometimes help the labels better visually group with corresponding axis ticks.
     ///
     /// __Default value:__ `true` for axis of a continuous x-scale. Otherwise, `false`.
-    #[serde(rename = "labelFlush")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_flush: Option<LabelFlush>,
-    #[serde(rename = "labelFlushOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_flush_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font: Option<ConditionalAxisPropertyStringNull>,
-    #[serde(rename = "labelFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_size: Option<GridWidthUnion>,
-    #[serde(rename = "labelFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_style: Option<ConditionalAxisPropertyFontStyleNull>,
-    #[serde(rename = "labelFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_font_weight: Option<FontWeight>,
-    #[serde(rename = "labelLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_line_height: Option<CornerRadiusUnion>,
-    #[serde(rename = "labelOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_offset: Option<GridDashOffsetUnion>,
-    #[serde(rename = "labelOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_opacity: Option<GridDashOffsetUnion>,
@@ -23784,11 +28640,9 @@ pub struct StyleValue {
     ///
     /// __Default value:__ `true` for non-nominal fields with non-log scales; `"greedy"` for log
     /// scales; otherwise `false`.
-    #[serde(rename = "labelOverlap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_overlap: Option<LabelOverlapUnion>,
-    #[serde(rename = "labelPadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_padding: Option<GridDashOffsetUnion>,
@@ -23798,15 +28652,12 @@ pub struct StyleValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub labels: Option<bool>,
-    #[serde(rename = "labelSeparation")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub label_separation: Option<CornerRadiusUnion>,
-    #[serde(rename = "maxExtent")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub max_extent: Option<CornerRadiusUnion>,
-    #[serde(rename = "minExtent")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub min_extent: Option<CornerRadiusUnion>,
@@ -23838,15 +28689,12 @@ pub struct StyleValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub style: Option<LegendText>,
-    #[serde(rename = "tickBand")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_band: Option<TickBandUnion>,
-    #[serde(rename = "tickCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_cap: Option<Cap>,
-    #[serde(rename = "tickColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_color: Option<GridColorUnion>,
@@ -23863,15 +28711,12 @@ pub struct StyleValue {
     ///
     /// __Default value__: Determine using a formula `ceil(width/40)` for x and `ceil(height/40)`
     /// for y.
-    #[serde(rename = "tickCount")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_count: Option<TickCount>,
-    #[serde(rename = "tickDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_dash: Option<AxisTickDash>,
-    #[serde(rename = "tickDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_dash_offset: Option<GridDashOffsetUnion>,
@@ -23879,7 +28724,6 @@ pub struct StyleValue {
     /// the axis. This flag is useful for styling axes for `band` scales such that ticks are
     /// placed on band boundaries rather in the middle of a band. Use in conjunction with
     /// `"bandPosition": 1` and an axis `"padding"` value of `0`.
-    #[serde(rename = "tickExtra")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_extra: Option<bool>,
@@ -23887,15 +28731,12 @@ pub struct StyleValue {
     /// example, a value of `1` indicates that ticks should not be less than 1 unit apart. If
     /// `tickMinStep` is specified, the `tickCount` value will be adjusted, if necessary, to
     /// enforce the minimum step value.
-    #[serde(rename = "tickMinStep")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_min_step: Option<CornerRadiusUnion>,
-    #[serde(rename = "tickOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "tickOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_opacity: Option<GridDashOffsetUnion>,
@@ -23903,7 +28744,6 @@ pub struct StyleValue {
     /// integer.
     ///
     /// __Default value:__ `true`
-    #[serde(rename = "tickRound")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_round: Option<bool>,
@@ -23913,11 +28753,9 @@ pub struct StyleValue {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ticks: Option<bool>,
-    #[serde(rename = "tickSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_size: Option<GridWidthUnion>,
-    #[serde(rename = "tickWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub tick_width: Option<GridWidthUnion>,
@@ -23943,63 +28781,48 @@ pub struct StyleValue {
     #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
     #[builder(default)]
     pub title: RemovableValue<LegendText>,
-    #[serde(rename = "titleAlign")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_align: Option<TitleAlignUnion>,
-    #[serde(rename = "titleAnchor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_anchor: Option<TitleAnchorUnion>,
-    #[serde(rename = "titleAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_angle: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleBaseline")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_baseline: Option<TextBaseline>,
-    #[serde(rename = "titleColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_color: Option<Box<Color>>,
-    #[serde(rename = "titleFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font: Option<Box<Color>>,
-    #[serde(rename = "titleFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_size: Option<FontSize>,
-    #[serde(rename = "titleFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_style: Option<Box<Color>>,
-    #[serde(rename = "titleFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_font_weight: Option<FontWeightUnion>,
-    #[serde(rename = "titleLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_limit: Option<FontSize>,
-    #[serde(rename = "titleLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_line_height: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_opacity: Option<CornerRadiusUnion>,
-    #[serde(rename = "titlePadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_padding: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleX")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_x: Option<CornerRadiusUnion>,
-    #[serde(rename = "titleY")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub title_y: Option<CornerRadiusUnion>,
@@ -24019,8 +28842,66 @@ pub struct StyleValue {
     pub zindex: Option<f64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum StyleOrient {
+    BackgroundExprRef(BackgroundExprRef),
+    Enum(AxisOrient),
+}
+
+/// The orientation of a non-stacked bar, tick, area, and line charts. The value is either
+/// horizontal (default) or vertical.
+/// - For bar, rule and tick, this determines whether the size of the bar and tick should be
+/// applied to x or y dimension.
+/// - For area, this property determines the orient property of the Vega output.
+/// - For line and trail marks, this property determines the sort order of the points in the
+/// line if `config.sortLineBy` is not specified. For stacked charts, this is always
+/// determined by the orientation of the stack; therefore explicitly specified value will be
+/// ignored.
+///
+/// The direction of the legend, one of `"vertical"` or `"horizontal"`.
+///
+/// __Default value:__
+/// - For top-/bottom-`orient`ed legends, `"horizontal"`
+/// - For left-/right-`orient`ed legends, `"vertical"`
+/// - For top/bottom-left/right-`orient`ed legends, `"horizontal"` for gradient legends and
+/// `"vertical"` for symbol legends.
+///
+/// The default direction (`"horizontal"` or `"vertical"`) for gradient legends.
+///
+/// __Default value:__ `"vertical"`.
+///
+/// The default direction (`"horizontal"` or `"vertical"`) for symbol legends.
+///
+/// __Default value:__ `"vertical"`.
+///
+/// Orientation of the box plot. This is normally automatically determined based on types of
+/// fields on x and y channels. However, an explicit `orient` be specified when the
+/// orientation is ambiguous.
+///
+/// __Default value:__ `"vertical"`.
+///
+/// Orientation of the error bar. This is normally automatically determined, but can be
+/// specified when the orientation is ambiguous and cannot be automatically determined.
+///
+/// Orientation of the error band. This is normally automatically determined, but can be
+/// specified when the orientation is ambiguous and cannot be automatically determined.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AxisOrient {
+    Bottom,
+    Horizontal,
+    Left,
+    Right,
+    Top,
+    Vertical,
+}
+
 /// Tick-Specific Config
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct TickConfig {
     /// The horizontal alignment of the text or ranged marks (area, bar, image, rect, rule). One
@@ -24036,11 +28917,9 @@ pub struct TickConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria: Option<Aria>,
-    #[serde(rename = "ariaRole")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role: Option<Box<Color>>,
-    #[serde(rename = "ariaRoleDescription")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub aria_role_description: Option<Box<Color>>,
@@ -24051,7 +28930,6 @@ pub struct TickConfig {
     ///
     /// __Default value:__  3/4 of step (width step for horizontal ticks and height step for
     /// vertical ticks).
-    #[serde(rename = "bandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub band_size: Option<f64>,
@@ -24068,6 +28946,13 @@ pub struct TickConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub baseline: Option<TextBaseline>,
+    /// Offset between bars for binned field. The ideal value for this is either 0 (preferred by
+    /// statisticians) or 1 (Vega-Lite default, D3 example style).
+    ///
+    /// __Default value:__ `1`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub bin_spacing: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub blend: Option<BlendUnion>,
@@ -24083,23 +28968,24 @@ pub struct TickConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub color: Option<MarkConfigColor>,
-    #[serde(rename = "cornerRadius")]
+    /// The default size of the bars on continuous scales.
+    ///
+    /// __Default value:__ `5`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub continuous_band_size: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusBottomRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_bottom_right: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopLeft")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_left: Option<CornerRadiusUnion>,
-    #[serde(rename = "cornerRadiusTopRight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius_top_right: Option<CornerRadiusUnion>,
@@ -24112,6 +28998,11 @@ pub struct TickConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub dir: Option<Dir>,
+    /// The default size of the bars with discrete dimensions. If unspecified, the default size
+    /// is  `step-2`, which provides 2 pixel offset between bars.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub discrete_band_size: Option<DiscreteBandSize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub dx: Option<CornerRadiusUnion>,
@@ -24121,7 +29012,6 @@ pub struct TickConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub ellipsis: Option<Box<Color>>,
-    #[serde(rename = "endAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub end_angle: Option<CornerRadiusUnion>,
@@ -24144,22 +29034,18 @@ pub struct TickConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub filled: Option<bool>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<Opacity>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font: Option<Box<Color>>,
-    #[serde(rename = "fontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_size: Option<FontSize>,
-    #[serde(rename = "fontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_style: Option<Box<Color>>,
-    #[serde(rename = "fontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_weight: Option<FontWeightUnion>,
@@ -24172,32 +29058,57 @@ pub struct TickConfig {
     /// The inner radius in pixels of arc marks. `innerRadius` is an alias for `radius2`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "innerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub inner_radius: Option<CornerRadiusUnion>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub interpolate: Option<MarkConfigInterpolate>,
-    /// Defines how Vega-Lite should handle marks for invalid values (`null` and `NaN`).
-    /// - If set to `"filter"` (default), all data items with null values will be skipped (for
-    /// line, trail, and area marks) or filtered (for other marks).
-    /// - If `null`, all data items are included. In this case, invalid values will be
-    /// interpreted as zeroes.
-    #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
+    /// Invalid data mode, which defines how the marks and corresponding scales should represent
+    /// invalid values (`null` and `NaN` in continuous scales *without* defined output for
+    /// invalid values).
+    ///
+    /// - `"filter"` — *Exclude* all invalid values from the visualization's *marks* and
+    /// *scales*. For path marks (for line, area, trail), this option will create paths that
+    /// connect valid points, as if the data rows with invalid values do not exist.
+    ///
+    /// - `"break-paths-filter-domains"` — Break path marks (for line, area, trail) at invalid
+    /// values.  For non-path marks, this is equivalent to `"filter"`. All *scale* domains will
+    /// *exclude* these filtered data points.
+    ///
+    /// - `"break-paths-show-domains"` — Break paths (for line, area, trail) at invalid values.
+    /// Hide invalid values for non-path marks. All *scale* domains will *include* these filtered
+    /// data points (for both path and non-path marks).
+    ///
+    /// - `"show"` or `null` — Show all data points in the marks and scale domains. Each scale
+    /// will use the output for invalid values defined in `config.scale.invalid` or, if
+    /// unspecified, by default invalid values will produce the same visual values as zero (if
+    /// the scale includes zero) or the minimum value (if the scale does not include zero).
+    ///
+    /// - `"break-paths-show-path-domains"` (default) — This is equivalent to
+    /// `"break-paths-show-domains"` for path-based marks (line/area/trail) and `"filter"` for
+    /// non-path marks.
+    ///
+    /// __Note__: If any channel's scale has an output for invalid values defined in
+    /// `config.scale.invalid`, all values for the scales will be considered "valid" since they
+    /// can produce a reasonable output for the scales. Thus, fields for such channels will not
+    /// be filtered and will not cause path breaks.
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    pub invalid: RemovableValue<Invalid>,
+    pub invalid: Option<MarkInvalidDataMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "lineBreak")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_break: Option<Box<Color>>,
-    #[serde(rename = "lineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_height: Option<CornerRadiusUnion>,
+    /// The minimum band size for bar and rectangle marks. __Default value:__ `0.25`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub min_band_size: Option<CornerRadiusUnion>,
     /// The overall opacity (value between [0,1]).
     ///
     /// __Default value:__ `0.7` for non-aggregate plots with `point`, `tick`, `circle`, or
@@ -24225,11 +29136,9 @@ pub struct TickConfig {
     /// The outer radius in pixels of arc marks. `outerRadius` is an alias for `radius`.
     ///
     /// __Default value:__ `0`
-    #[serde(rename = "outerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub outer_radius: Option<CornerRadiusUnion>,
-    #[serde(rename = "padAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub pad_angle: Option<CornerRadiusUnion>,
@@ -24269,7 +29178,6 @@ pub struct TickConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub smooth: Option<Aria>,
-    #[serde(rename = "startAngle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub start_angle: Option<CornerRadiusUnion>,
@@ -24280,35 +29188,27 @@ pub struct TickConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke: Option<MarkConfigFill>,
-    #[serde(rename = "strokeCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_cap: Option<Cap>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeJoin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_join: Option<StrokeJoinUnion>,
-    #[serde(rename = "strokeMiterLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_miter_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<Opacity>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<FontSize>,
@@ -24337,17 +29237,18 @@ pub struct TickConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub thickness: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time: Option<CornerRadiusUnion>,
     /// Default relative band position for a time unit. If set to `0`, the marks will be
     /// positioned at the beginning of the time unit band step. If set to `0.5`, the marks will
     /// be positioned in the middle of the time unit band step.
-    #[serde(rename = "timeUnitBandPosition")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_position: Option<f64>,
     /// Default relative band size for a time unit. If set to `1`, the bandwidth of the marks
     /// will be equal to the time unit band step. If set to `0.5`, bandwidth of the marks will be
     /// half of the time unit band step.
-    #[serde(rename = "timeUnitBandSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub time_unit_band_size: Option<f64>,
@@ -24409,7 +29310,9 @@ pub struct TickConfig {
 /// [titles](https://vega.github.io/vega-lite/docs/title.html). For a full list of title
 /// configuration options, please see the [corresponding section of the title
 /// documentation](https://vega.github.io/vega-lite/docs/title.html#config).
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct BaseTitleNoValueRefs {
     /// Horizontal text alignment for title text. One of `"left"`, `"center"`, or `"right"`.
@@ -24444,15 +29347,12 @@ pub struct BaseTitleNoValueRefs {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font: Option<Box<Color>>,
-    #[serde(rename = "fontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_size: Option<FontSize>,
-    #[serde(rename = "fontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_style: Option<Box<Color>>,
-    #[serde(rename = "fontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub font_weight: Option<FontWeightUnion>,
@@ -24462,7 +29362,6 @@ pub struct BaseTitleNoValueRefs {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub limit: Option<FontSize>,
-    #[serde(rename = "lineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub line_height: Option<CornerRadiusUnion>,
@@ -24472,31 +29371,24 @@ pub struct BaseTitleNoValueRefs {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub orient: Option<TitleParamsOrient>,
-    #[serde(rename = "subtitleColor")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_color: Option<Box<Color>>,
-    #[serde(rename = "subtitleFont")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_font: Option<Box<Color>>,
-    #[serde(rename = "subtitleFontSize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_font_size: Option<FontSize>,
-    #[serde(rename = "subtitleFontStyle")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_font_style: Option<Box<Color>>,
-    #[serde(rename = "subtitleFontWeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_font_weight: Option<FontWeightUnion>,
-    #[serde(rename = "subtitleLineHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_line_height: Option<CornerRadiusUnion>,
-    #[serde(rename = "subtitlePadding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub subtitle_padding: Option<CornerRadiusUnion>,
@@ -24505,9 +29397,83 @@ pub struct BaseTitleNoValueRefs {
     pub zindex: Option<FontSize>,
 }
 
+/// Define [custom format
+/// configuration](https://vega.github.io/vega-lite/docs/config.html#format) for tooltips. If
+/// unspecified, default format config will be applied.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
+#[builder(setter(into, strip_option))]
+pub struct FormatConfig {
+    /// If normalizedNumberFormatType is not specified, D3 number format for axis labels, text
+    /// marks, and tooltips of normalized stacked fields (fields with `stack: "normalize"`). For
+    /// example `"s"` for SI units. Use [D3's number format
+    /// pattern](https://github.com/d3/d3-format#locale_format).
+    ///
+    /// If `config.normalizedNumberFormatType` is specified and `config.customFormatTypes` is
+    /// `true`, this value will be passed as `format` alongside `datum.value` to the
+    /// `config.numberFormatType` function. __Default value:__ `%`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub normalized_number_format: Option<String>,
+    /// [Custom format
+    /// type](https://vega.github.io/vega-lite/docs/config.html#custom-format-type) for
+    /// `config.normalizedNumberFormat`.
+    ///
+    /// __Default value:__ `undefined` -- This is equilvalent to call D3-format, which is exposed
+    /// as [`format` in Vega-Expression](https://vega.github.io/vega/docs/expressions/#format).
+    /// __Note:__ You must also set `customFormatTypes` to `true` to use this feature.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub normalized_number_format_type: Option<String>,
+    /// If numberFormatType is not specified, D3 number format for guide labels, text marks, and
+    /// tooltips of non-normalized fields (fields *without* `stack: "normalize"`). For example
+    /// `"s"` for SI units. Use [D3's number format
+    /// pattern](https://github.com/d3/d3-format#locale_format).
+    ///
+    /// If `config.numberFormatType` is specified and `config.customFormatTypes` is `true`, this
+    /// value will be passed as `format` alongside `datum.value` to the `config.numberFormatType`
+    /// function.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub number_format: Option<String>,
+    /// [Custom format
+    /// type](https://vega.github.io/vega-lite/docs/config.html#custom-format-type) for
+    /// `config.numberFormat`.
+    ///
+    /// __Default value:__ `undefined` -- This is equilvalent to call D3-format, which is exposed
+    /// as [`format` in Vega-Expression](https://vega.github.io/vega/docs/expressions/#format).
+    /// __Note:__ You must also set `customFormatTypes` to `true` to use this feature.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub number_format_type: Option<String>,
+    /// Default time format for raw time values (without time units) in text marks, legend labels
+    /// and header labels.
+    ///
+    /// __Default value:__ `"%b %d, %Y"` __Note:__ Axes automatically determine the format for
+    /// each label automatically so this config does not affect axes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time_format: Option<String>,
+    /// [Custom format
+    /// type](https://vega.github.io/vega-lite/docs/config.html#custom-format-type) for
+    /// `config.timeFormat`.
+    ///
+    /// __Default value:__ `undefined` -- This is equilvalent to call D3-time-format, which is
+    /// exposed as [`timeFormat` in
+    /// Vega-Expression](https://vega.github.io/vega/docs/expressions/#timeFormat). __Note:__ You
+    /// must also set `customFormatTypes` to `true` and there must *not* be a `timeUnit` defined
+    /// to use this feature.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    pub time_format_type: Option<String>,
+}
+
 /// Default properties for [single view
 /// plots](https://vega.github.io/vega-lite/docs/spec.html#single).
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[derive(Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct ViewConfig {
     /// Whether the view should be clipped.
@@ -24518,7 +29484,6 @@ pub struct ViewConfig {
     /// marks.
     ///
     /// __Default value:__ `200`
-    #[serde(rename = "continuousHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub continuous_height: Option<f64>,
@@ -24526,11 +29491,9 @@ pub struct ViewConfig {
     /// marks.
     ///
     /// __Default value:__ `200`
-    #[serde(rename = "continuousWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub continuous_width: Option<f64>,
-    #[serde(rename = "cornerRadius")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub corner_radius: Option<CornerRadiusUnion>,
@@ -24544,7 +29507,6 @@ pub struct ViewConfig {
     /// form of `{step: number}` defining the height per discrete step.
     ///
     /// __Default value:__ a step size based on `config.view.step`.
-    #[serde(rename = "discreteHeight")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub discrete_height: Option<DiscreteHeightUnion>,
@@ -24553,7 +29515,6 @@ pub struct ViewConfig {
     /// form of `{step: number}` defining the width per discrete step.
     ///
     /// __Default value:__ a step size based on `config.view.step`.
-    #[serde(rename = "discreteWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub discrete_width: Option<DiscreteWidthUnion>,
@@ -24563,7 +29524,6 @@ pub struct ViewConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill: Option<Box<Color>>,
-    #[serde(rename = "fillOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub fill_opacity: Option<Opacity>,
@@ -24584,34 +29544,40 @@ pub struct ViewConfig {
     #[serde(default, skip_serializing_if = "RemovableValue::is_default")]
     #[builder(default)]
     pub stroke: RemovableValue<Color>,
-    #[serde(rename = "strokeCap")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_cap: Option<Cap>,
-    #[serde(rename = "strokeDash")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash: Option<StrokeDashUnion>,
-    #[serde(rename = "strokeDashOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_dash_offset: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeJoin")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_join: Option<StrokeJoinUnion>,
-    #[serde(rename = "strokeMiterLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_miter_limit: Option<CornerRadiusUnion>,
-    #[serde(rename = "strokeOpacity")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_opacity: Option<Opacity>,
-    #[serde(rename = "strokeWidth")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub stroke_width: Option<FontSize>,
+}
+
+/// The default height when the plot has non arc marks and either a discrete y-field or no
+/// y-field. The height can be either a number indicating a fixed height or an object in the
+/// form of `{step: number}` defining the height per discrete step.
+///
+/// __Default value:__ a step size based on `config.view.step`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum DiscreteHeightUnion {
+    DiscreteHeightClass(DiscreteHeightClass),
+    Double(f64),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
@@ -24622,6 +29588,19 @@ pub struct DiscreteHeightClass {
     pub step: Option<f64>,
 }
 
+/// The default width when the plot has non-arc marks and either a discrete x-field or no
+/// x-field. The width can be either a number indicating a fixed width or an object in the
+/// form of `{step: number}` defining the width per discrete step.
+///
+/// __Default value:__ a step size based on `config.view.step`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum DiscreteWidthUnion {
+    DiscreteWidthClass(DiscreteWidthClass),
+    Double(f64),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct DiscreteWidthClass {
@@ -24630,12 +29609,24 @@ pub struct DiscreteWidthClass {
     pub step: Option<f64>,
 }
 
+/// The full data set, included inline. This can be an array of objects or primitive values,
+/// an object, or a string. Arrays of primitive values are ingested as objects with a `data`
+/// property. Strings are parsed according to the specified format type.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[derive(From)]
+pub enum InlineDatasetValue {
+    AnythingMap(HashMap<String, Option<serde_json::Value>>),
+    String(String),
+    UnionArray(Vec<serde_json::value::Value>),
+}
+
 /// A specification of the view that gets faceted.
+///
+/// A specification of the view that gets repeated.
 ///
 /// A full layered plot specification, which may contains `encoding` and `projection`
 /// properties that will be applied to underlying unit (single-view) specifications.
-///
-/// A specification of the view that gets repeated.
 ///
 /// Any specification in Vega-Lite.
 ///
@@ -24651,11 +29642,6 @@ pub struct DiscreteWidthClass {
 /// Base interface for a vertical concatenation specification.
 ///
 /// Base interface for a horizontal concatenation specification.
-///
-/// A unit specification, which can contain either [primitive marks or composite
-/// marks](https://vega.github.io/vega-lite/docs/mark.html#types).
-///
-/// Base interface for a unit (single-view) specification.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Builder)]
 #[builder(setter(into, strip_option))]
 pub struct VegaliteSpec {
@@ -24874,3671 +29860,4 @@ pub struct VegaliteSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
     pub hconcat: Option<Vec<Spec>>,
-}
-
-/// The alignment to apply to grid rows and columns. The supported string values are `"all"`,
-/// `"each"`, and `"none"`.
-///
-/// - For `"none"`, a flow layout will be used, in which adjacent subviews are simply placed
-/// one after the other.
-/// - For `"each"`, subviews will be aligned into a clean grid structure, but each row or
-/// column may be of variable size.
-/// - For `"all"`, subviews will be aligned and each row or column will be sized identically
-/// based on the maximum observed size. String values for this property will be applied to
-/// both grid rows and columns.
-///
-/// Alternatively, an object value of the form `{"row": string, "column": string}` can be
-/// used to supply different alignments for rows and columns.
-///
-/// __Default value:__ `"all"`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum VegaliteAlign {
-    Enum(LayoutAlign),
-    RowColLayoutAlign(RowColLayoutAlign),
-}
-
-/// How the visualization size should be determined. If a string, should be one of `"pad"`,
-/// `"fit"` or `"none"`. Object values can additionally specify parameters for content sizing
-/// and automatic resizing.
-///
-/// __Default value__: `pad`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Autosize {
-    AutoSizeParams(AutoSizeParams),
-    Enum(AutosizeType),
-}
-
-/// CSS color property to use as the background of the entire view.
-///
-/// __Default value:__ `"white"`
-///
-/// The color of the header label, can be in hex color code or regular color name.
-///
-/// Color of the header title, can be in hex color code or regular color name.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Color {
-    BackgroundExprRef(BackgroundExprRef),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Center {
-    Bool(bool),
-    RowColBoolean(RowColBoolean),
-}
-
-/// Generate graticule GeoJSON data for geographic reference lines.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Graticule {
-    Bool(bool),
-    GraticuleParams(GraticuleParams),
-}
-
-/// Generate sphere GeoJSON data for the full globe.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum SphereUnion {
-    Bool(bool),
-    SphereClass(SphereClass),
-}
-
-/// The full data set, included inline. This can be an array of objects or primitive values,
-/// an object, or a string. Arrays of primitive values are ingested as objects with a `data`
-/// property. Strings are parsed according to the specified format type.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum UrlDataInlineDataset {
-    AnythingMap(HashMap<String, Option<serde_json::Value>>),
-    String(String),
-    UnionArray(Vec<serde_json::value::Value>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-#[allow(unused)]
-enum UnusedInlineDataset {
-    AnythingMap(HashMap<String, Option<serde_json::Value>>),
-    Bool(bool),
-    Double(f64),
-    String(String),
-}
-
-/// Aggregation function for the field (e.g., `"mean"`, `"sum"`, `"median"`, `"min"`,
-/// `"max"`, `"count"`).
-///
-/// __Default value:__ `undefined` (None)
-///
-/// __See also:__ [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html)
-/// documentation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Aggregate {
-    ArgmDef(ArgmDef),
-    Enum(NonArgAggregateOp),
-}
-
-/// An object indicating bin properties, or simply `true` for using default bin parameters.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum AngleBin {
-    BinParams(BinParams),
-    Bool(bool),
-}
-
-/// A two-element (`[min, max]`) array indicating the range of desired bin values.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum BinExtent {
-    BinExtentClass(BinExtentClass),
-    DoubleArray(Vec<f64>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum AngleCondition {
-    ConditionalPredicateValueDefNumberExprRefClass(ConditionalPredicateValueDefNumberExprRefClass),
-    ConditionalValueDefNumberExprRefArray(Vec<ConditionalValueDefNumberExprRef>),
-}
-
-/// Predicate for triggering the condition
-///
-/// The `filter` property must be a predication definition, which can take one of the
-/// following forms:
-///
-/// 1) an [expression](https://vega.github.io/vega-lite/docs/types.html#expression) string,
-/// where `datum` can be used to refer to the current data object. For example, `{filter:
-/// "datum.b2 > 60"}` would make the output data includes only items that have values in the
-/// field `b2` over 60.
-///
-/// 2) one of the [field
-/// predicates](https://vega.github.io/vega-lite/docs/predicate.html#field-predicate):
-/// [`equal`](https://vega.github.io/vega-lite/docs/predicate.html#field-equal-predicate),
-/// [`lt`](https://vega.github.io/vega-lite/docs/predicate.html#lt-predicate),
-/// [`lte`](https://vega.github.io/vega-lite/docs/predicate.html#lte-predicate),
-/// [`gt`](https://vega.github.io/vega-lite/docs/predicate.html#gt-predicate),
-/// [`gte`](https://vega.github.io/vega-lite/docs/predicate.html#gte-predicate),
-/// [`range`](https://vega.github.io/vega-lite/docs/predicate.html#range-predicate),
-/// [`oneOf`](https://vega.github.io/vega-lite/docs/predicate.html#one-of-predicate), or
-/// [`valid`](https://vega.github.io/vega-lite/docs/predicate.html#valid-predicate),
-///
-/// 3) a [selection
-/// predicate](https://vega.github.io/vega-lite/docs/predicate.html#selection-predicate),
-/// which define the names of a selection that the data point should belong to (or a logical
-/// composition of selections).
-///
-/// 4) a [logical
-/// composition](https://vega.github.io/vega-lite/docs/predicate.html#composition) of (1),
-/// (2), or (3).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum PredicateCompositionElement {
-    Predicate(Box<Predicate>),
-    String(String),
-}
-
-/// Predicate for triggering the condition
-///
-/// The `filter` property must be a predication definition, which can take one of the
-/// following forms:
-///
-/// 1) an [expression](https://vega.github.io/vega-lite/docs/types.html#expression) string,
-/// where `datum` can be used to refer to the current data object. For example, `{filter:
-/// "datum.b2 > 60"}` would make the output data includes only items that have values in the
-/// field `b2` over 60.
-///
-/// 2) one of the [field
-/// predicates](https://vega.github.io/vega-lite/docs/predicate.html#field-predicate):
-/// [`equal`](https://vega.github.io/vega-lite/docs/predicate.html#field-equal-predicate),
-/// [`lt`](https://vega.github.io/vega-lite/docs/predicate.html#lt-predicate),
-/// [`lte`](https://vega.github.io/vega-lite/docs/predicate.html#lte-predicate),
-/// [`gt`](https://vega.github.io/vega-lite/docs/predicate.html#gt-predicate),
-/// [`gte`](https://vega.github.io/vega-lite/docs/predicate.html#gte-predicate),
-/// [`range`](https://vega.github.io/vega-lite/docs/predicate.html#range-predicate),
-/// [`oneOf`](https://vega.github.io/vega-lite/docs/predicate.html#one-of-predicate), or
-/// [`valid`](https://vega.github.io/vega-lite/docs/predicate.html#valid-predicate),
-///
-/// 3) a [selection
-/// predicate](https://vega.github.io/vega-lite/docs/predicate.html#selection-predicate),
-/// which define the names of a selection that the data point should belong to (or a logical
-/// composition of selections).
-///
-/// 4) a [logical
-/// composition](https://vega.github.io/vega-lite/docs/predicate.html#composition) of (1),
-/// (2), or (3).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ConditionalValueDefNumberExprRefPredicateComposition {
-    Predicate(Box<Predicate>),
-    String(String),
-}
-
-/// The value that the field should be equal to.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Equal {
-    Bool(bool),
-    Double(f64),
-    EqualDateTime(EqualDateTime),
-    String(String),
-}
-
-/// Value representing the day of a week. This can be one of: (1) integer value -- `1`
-/// represents Monday; (2) case-insensitive day name (e.g., `"Monday"`); (3)
-/// case-insensitive, 3-character short day name (e.g., `"Mon"`).
-///
-/// **Warning:** A DateTime definition object with `day`** should not be combined with
-/// `year`, `quarter`, `month`, or `date`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum DayUnion {
-    Double(f64),
-    String(String),
-}
-
-/// One of: (1) integer value representing the month from `1`-`12`. `1` represents January;
-/// (2) case-insensitive month name (e.g., `"January"`); (3) case-insensitive, 3-character
-/// short month name (e.g., `"Jan"`).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Month {
-    Double(f64),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Lt {
-    Double(f64),
-    GtDateTime(GtDateTime),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum SelectionInitInterval {
-    Bool(bool),
-    DateTime(DateTime),
-    Double(f64),
-    String(String),
-}
-
-/// An array of inclusive minimum and maximum values for a field value of a data item to be
-/// included in the filtered data.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum LogicalNotPredicateRange {
-    BackgroundExprRef(BackgroundExprRef),
-    UnionArray(Vec<Option<PurpleRange>>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum PurpleRange {
-    Double(f64),
-    RangeDateTime(RangeDateTime),
-}
-
-/// Time unit for the field to be tested.
-///
-/// Time unit (e.g., `year`, `yearmonth`, `month`, `hours`) for a temporal field. or [a
-/// temporal field that gets casted as
-/// ordinal](https://vega.github.io/vega-lite/docs/type.html#cast).
-///
-/// __Default value:__ `undefined` (None)
-///
-/// __See also:__ [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html)
-/// documentation.
-///
-/// The timeUnit.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TimeUnitUnion {
-    Enum(TimeUnit),
-    TimeUnitParams(TimeUnitParams),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ConditionalValueDefNumberExprRefValue {
-    BackgroundExprRef(BackgroundExprRef),
-    Double(f64),
-}
-
-/// A constant value in data domain.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum PrimitiveValue {
-    Bool(bool),
-    Double(f64),
-    RepeatRefClass(RepeatRefClass),
-    String(String),
-}
-
-/// __Required.__ A string defining the name of the field from which to pull a data value or
-/// an object defining iterated values from the
-/// [`repeat`](https://vega.github.io/vega-lite/docs/repeat.html) operator.
-///
-/// __See also:__ [`field`](https://vega.github.io/vega-lite/docs/field.html) documentation.
-///
-/// __Notes:__ 1)  Dots (`.`) and brackets (`[` and `]`) can be used to access nested objects
-/// (e.g., `"field": "foo.bar"` and `"field": "foo['bar']"`). If field names contain dots or
-/// brackets but are not nested, you can use `\\` to escape dots and brackets (e.g.,
-/// `"a\\.b"` and `"a\\[0\\]"`). See more details about escaping in the [field
-/// documentation](https://vega.github.io/vega-lite/docs/field.html). 2) `field` is not
-/// required if `aggregate` is `count`.
-///
-/// The data [field](https://vega.github.io/vega-lite/docs/field.html) to sort by.
-///
-/// __Default value:__ If unspecified, defaults to the field specified in the outer data
-/// reference.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Field {
-    RepeatRef(RepeatRef),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Aria {
-    BackgroundExprRef(BackgroundExprRef),
-    Bool(bool),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum CornerRadiusUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Double(f64),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Format {
-    AnythingMap(HashMap<String, Option<serde_json::Value>>),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum FontSize {
-    BackgroundExprRef(BackgroundExprRef),
-    Double(f64),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum GridAlign {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(LayoutAlign),
-}
-
-/// The horizontal alignment of the text or ranged marks (area, bar, image, rect, rule). One
-/// of `"left"`, `"right"`, `"center"`.
-///
-/// __Note:__ Expression reference is *not* supported for range marks.
-///
-/// Horizontal text alignment of header labels. One of `"left"`, `"center"`, or `"right"`.
-///
-/// Horizontal text alignment (to the anchor) of header titles.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TitleAlignUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(Align),
-}
-
-/// For text marks, the vertical text baseline. One of `"alphabetic"` (default), `"top"`,
-/// `"middle"`, `"bottom"`, `"line-top"`, `"line-bottom"`, or an expression reference that
-/// provides one of the valid values. The `"line-top"` and `"line-bottom"` values operate
-/// similarly to `"top"` and `"bottom"`, but are calculated relative to the `lineHeight`
-/// rather than `fontSize` alone.
-///
-/// For range marks, the vertical alignment of the marks. One of `"top"`, `"middle"`,
-/// `"bottom"`.
-///
-/// __Note:__ Expression reference is *not* supported for range marks.
-///
-/// The vertical text baseline for the header labels. One of `"alphabetic"` (default),
-/// `"top"`, `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and
-/// `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated
-/// relative to the `titleLineHeight` rather than `titleFontSize` alone.
-///
-/// The vertical text baseline for the header title. One of `"alphabetic"` (default),
-/// `"top"`, `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and
-/// `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated
-/// relative to the `titleLineHeight` rather than `titleFontSize` alone.
-///
-/// __Default value:__ `"middle"`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TextBaseline {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(Baseline),
-}
-
-/// The font weight of the header label.
-///
-/// Font weight of the header title. This can be either a string (e.g `"bold"`, `"normal"`)
-/// or a number (`100`, `200`, `300`, ..., `900` where `"normal"` = `400` and `"bold"` =
-/// `700`).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum FontWeightUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Double(f64),
-    Enum(FontWeightEnum),
-}
-
-/// The strategy to use for resolving overlap of axis labels. If `false` (the default), no
-/// overlap reduction is attempted. If set to `true` or `"parity"`, a strategy of removing
-/// every other label is used (this works well for standard linear axes). If set to
-/// `"greedy"`, a linear scan of the labels is performed, removing any labels that overlaps
-/// with the last visible label (this often works better for log-scaled axes).
-///
-/// __Default value:__ `true` for non-nominal fields with non-log scales; `"greedy"` for log
-/// scales; otherwise `false`.
-///
-/// The strategy to use for resolving overlap of labels in gradient legends. If `false`, no
-/// overlap reduction is attempted. If set to `true` or `"parity"`, a strategy of removing
-/// every other label is used. If set to `"greedy"`, a linear scan of the labels is
-/// performed, removing any label that overlaps with the last visible label (this often works
-/// better for log-scaled axes).
-///
-/// __Default value:__ `"greedy"` for `log scales otherwise `true`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum LabelOverlapUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Bool(bool),
-    Enum(LabelOverlapEnum),
-}
-
-/// The projection’s translation offset as a two-element array `[tx, ty]`.
-///
-/// A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient
-/// definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values
-/// between `0` to `1` for opacity).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum StrokeDashUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    DoubleArray(Vec<f64>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TickCount {
-    Double(f64),
-    Enum(TimeInterval),
-    TickCountTimeIntervalStep(TickCountTimeIntervalStep),
-}
-
-/// A string or array of strings indicating the name of custom styles to apply to the mark. A
-/// style is a named collection of mark property defaults defined within the [style
-/// configuration](https://vega.github.io/vega-lite/docs/mark.html#style-config). If style is
-/// an array, later styles will override earlier styles. Any [mark
-/// properties](https://vega.github.io/vega-lite/docs/encoding.html#mark-prop) explicitly
-/// defined within the `encoding` will override a style default.
-///
-/// __Default value:__ The mark's name. For example, a bar mark will have style `"bar"` by
-/// default. __Note:__ Any specified style will augment the default style. For example, a bar
-/// mark with `"style": "foo"` will receive from `config.style.bar` and `config.style.foo`
-/// (the specified style `"foo"` has higher precedence).
-///
-/// A string or array of strings indicating the name of custom styles to apply to the axis. A
-/// style is a named collection of axis property defined within the [style
-/// configuration](https://vega.github.io/vega-lite/docs/mark.html#style-config). If style is
-/// an array, later styles will override earlier styles.
-///
-/// __Default value:__ (none) __Note:__ Any specified style will augment the default style.
-/// For example, an x-axis mark with `"style": "foo"` will use `config.axisX` and
-/// `config.style.foo` (the specified style `"foo"` has higher precedence).
-///
-/// A [mark style property](https://vega.github.io/vega-lite/docs/config.html#style) to apply
-/// to the title text mark.
-///
-/// __Default value:__ `"group-title"`.
-///
-/// Placeholder text if the `text` channel is not specified
-///
-/// The subtitle Text.
-///
-/// A string or array of strings indicating the name of custom styles to apply to the view
-/// background. A style is a named collection of mark property defaults defined within the
-/// [style configuration](https://vega.github.io/vega-lite/docs/mark.html#style-config). If
-/// style is an array, later styles will override earlier styles.
-///
-/// __Default value:__ `"cell"` __Note:__ Any specified view background properties will
-/// augment the default style.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum LegendText {
-    String(String),
-    StringArray(Vec<String>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TitleAnchorUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(TitleAnchorEnum),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TitleOrientUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(Orient),
-}
-
-/// Explicitly set the visible axis tick values.
-///
-/// Explicitly set the visible legend values.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Values {
-    BackgroundExprRef(BackgroundExprRef),
-    UnionArray(Vec<SelectionInitInterval>),
-}
-
-/// Bin boundaries can be provided to scales as either an explicit array of bin boundaries or
-/// as a bin specification object. The legal values are:
-/// - An [array](../types/#Array) literal of bin boundary values. For example, `[0, 5, 10,
-/// 15, 20]`. The array must include both starting and ending boundaries. The previous
-/// example uses five values to indicate a total of four bin intervals: [0-5), [5-10),
-/// [10-15), [15-20]. Array literals may include signal references as elements.
-/// - A [bin specification object](https://vega.github.io/vega-lite/docs/scale.html#bins)
-/// that indicates the bin _step_ size, and optionally the _start_ and _stop_ boundaries.
-/// - An array of bin boundaries over the scale domain. If provided, axes and legends will
-/// use the bin boundaries to inform the choice of tick marks and text labels.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ScaleBins {
-    DoubleArray(Vec<f64>),
-    ScaleBinParams(ScaleBinParams),
-}
-
-/// Customized domain values in the form of constant values or dynamic values driven by a
-/// parameter.
-///
-/// 1) Constant `domain` for _quantitative_ fields can take one of the following forms:
-///
-/// - A two-element array with minimum and maximum values. To create a diverging scale, this
-/// two-element array can be combined with the `domainMid` property.
-/// - An array with more than two entries, for [Piecewise quantitative
-/// scales](https://vega.github.io/vega-lite/docs/scale.html#piecewise).
-/// - A string value `"unaggregated"`, if the input field is aggregated, to indicate that the
-/// domain should include the raw data values prior to the aggregation.
-///
-/// 2) Constant `domain` for _temporal_ fields can be a two-element array with minimum and
-/// maximum values, in the form of either timestamps or the [DateTime definition
-/// objects](https://vega.github.io/vega-lite/docs/types.html#datetime).
-///
-/// 3) Constant `domain` for _ordinal_ and _nominal_ fields can be an array that lists valid
-/// input values.
-///
-/// 4) To combine (union) specified constant domain with the field's values, `domain` can be
-/// an object with a `unionWith` property that specify constant domain to be combined. For
-/// example, `domain: {unionWith: [0, 100]}` for a quantitative scale means that the scale
-/// domain always includes `[0, 100]`, but will include other values in the fields beyond
-/// `[0, 100]`.
-///
-/// 5) Domain can also takes an object defining a field or encoding of a parameter that
-/// [interactively
-/// determines](https://vega.github.io/vega-lite/docs/selection.html#scale-domains) the scale
-/// domain.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum DomainUnion {
-    DomainUnionWith(DomainUnionWith),
-    Enum(DomainEnum),
-    UnionArray(Vec<Option<DomainElement>>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum DomainElement {
-    Bool(bool),
-    DomainDateTime(DomainDateTime),
-    Double(f64),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum DomainM {
-    DomainMaxDateTime(DomainMaxDateTime),
-    Double(f64),
-}
-
-/// The interpolation method for range values. By default, a general interpolator for
-/// numbers, dates, strings and colors (in HCL space) is used. For color ranges, this
-/// property allows interpolation in alternative color spaces. Legal values include `rgb`,
-/// `hsl`, `hsl-long`, `lab`, `hcl`, `hcl-long`, `cubehelix` and `cubehelix-long` ('-long'
-/// variants use longer paths in polar coordinate spaces). If object-valued, this property
-/// accepts an object with a string-valued _type_ property and an optional numeric _gamma_
-/// property applicable to rgb and cubehelix interpolators. For more, see the [d3-interpolate
-/// documentation](https://github.com/d3/d3-interpolate).
-///
-/// * __Default value:__ `hcl`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ScaleInterpolate {
-    Enum(ScaleInterpolateEnum),
-    ScaleInterpolateParamsClass(ScaleInterpolateParamsClass),
-}
-
-/// Extending the domain so that it starts and ends on nice round values. This method
-/// typically modifies the scale’s domain, and may only extend the bounds to the nearest
-/// round value. Nicing is useful if the domain is computed from data and may be irregular.
-/// For example, for a domain of _[0.201479…, 0.996679…]_, a nice domain might be _[0.2,
-/// 1.0]_.
-///
-/// For quantitative scales such as linear, `nice` can be either a boolean flag or a number.
-/// If `nice` is a number, it will represent a desired tick count. This allows greater
-/// control over the step size used to extend the bounds, guaranteeing that the returned
-/// ticks will exactly cover the domain.
-///
-/// For temporal fields with time and utc scales, the `nice` value can be a string indicating
-/// the desired time interval. Legal values are `"millisecond"`, `"second"`, `"minute"`,
-/// `"hour"`, `"day"`, `"week"`, `"month"`, and `"year"`. Alternatively, `time` and `utc`
-/// scales can accept an object-valued interval specifier of the form `{"interval": "month",
-/// "step": 3}`, which includes a desired number of interval steps. Here, the domain would
-/// snap to quarter (Jan, Apr, Jul, Oct) boundaries.
-///
-/// __Default value:__ `true` for unbinned _quantitative_ fields without explicit domain
-/// bounds; `false` otherwise.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Nice {
-    Bool(bool),
-    Double(f64),
-    Enum(TimeInterval),
-    NiceTimeIntervalStep(NiceTimeIntervalStep),
-}
-
-/// The range of the scale. One of:
-///
-/// - A string indicating a [pre-defined named scale
-/// range](https://vega.github.io/vega-lite/docs/scale.html#range-config) (e.g., example,
-/// `"symbol"`, or `"diverging"`).
-///
-/// - For [continuous scales](https://vega.github.io/vega-lite/docs/scale.html#continuous),
-/// two-element array indicating  minimum and maximum values, or an array with more than two
-/// entries for specifying a [piecewise
-/// scale](https://vega.github.io/vega-lite/docs/scale.html#piecewise).
-///
-/// - For [discrete](https://vega.github.io/vega-lite/docs/scale.html#discrete) and
-/// [discretizing](https://vega.github.io/vega-lite/docs/scale.html#discretizing) scales, an
-/// array of desired output values or an object with a `field` property representing the
-/// range values.  For example, if a field `color` contains CSS color names, we can set
-/// `range` to `{field: "color"}`.
-///
-/// __Notes:__
-///
-/// 1) For color scales you can also specify a color
-/// [`scheme`](https://vega.github.io/vega-lite/docs/scale.html#scheme) instead of `range`.
-///
-/// 2) Any directly specified `range` for `x` and `y` channels will be ignored. Range can be
-/// customized via the view's corresponding
-/// [size](https://vega.github.io/vega-lite/docs/size.html) (`width` and `height`).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ScaleRange {
-    Enum(RangeEnum),
-    FieldRange(FieldRange),
-    UnionArray(Vec<FluffyRange>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum FluffyRange {
-    BackgroundExprRef(BackgroundExprRef),
-    Double(f64),
-    DoubleArray(Vec<f64>),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum RangeM {
-    BackgroundExprRef(BackgroundExprRef),
-    Double(f64),
-    String(String),
-}
-
-/// A string indicating a color
-/// [scheme](https://vega.github.io/vega-lite/docs/scale.html#scheme) name (e.g.,
-/// `"category10"` or `"blues"`) or a [scheme parameter
-/// object](https://vega.github.io/vega-lite/docs/scale.html#scheme-params).
-///
-/// Discrete color schemes may be used with
-/// [discrete](https://vega.github.io/vega-lite/docs/scale.html#discrete) or
-/// [discretizing](https://vega.github.io/vega-lite/docs/scale.html#discretizing) scales.
-/// Continuous color schemes are intended for use with color scales.
-///
-/// For the full list of supported schemes, please refer to the [Vega
-/// Scheme](https://vega.github.io/vega/docs/schemes/#reference) reference.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Scheme {
-    SchemeParams(SchemeParams),
-    String(String),
-}
-
-/// Sort order for the encoded field.
-///
-/// For continuous fields (quantitative or temporal), `sort` can be either `"ascending"` or
-/// `"descending"`.
-///
-/// For discrete fields, `sort` can be one of the following:
-/// - `"ascending"` or `"descending"` -- for sorting by the values' natural order in
-/// JavaScript.
-/// - [A string indicating an encoding channel name to sort
-/// by](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding) (e.g., `"x"` or
-/// `"y"`) with an optional minus prefix for descending sort (e.g., `"-x"` to sort by
-/// x-field, descending). This channel string is short-form of [a sort-by-encoding
-/// definition](https://vega.github.io/vega-lite/docs/sort.html#sort-by-encoding). For
-/// example, `"sort": "-x"` is equivalent to `"sort": {"encoding": "x", "order":
-/// "descending"}`.
-/// - [A sort field definition](https://vega.github.io/vega-lite/docs/sort.html#sort-field)
-/// for sorting by another field.
-/// - [An array specifying the field values in preferred
-/// order](https://vega.github.io/vega-lite/docs/sort.html#sort-array). In this case, the
-/// sort order will obey the values in the array, followed by any unspecified values in their
-/// original order. For discrete time field, values in the sort array can be [date-time
-/// definition objects](struct.DateTime.html). In addition, for time units `"month"` and `"day"`,
-/// the values can be the month or day names (case insensitive) or their 3-letter initials
-/// (e.g., `"Mon"`, `"Tue"`).
-/// - `null` indicating no sort.
-///
-/// __Default value:__ `"ascending"`
-///
-/// __Note:__ `null` and sorting by another channel is not supported for `row` and `column`.
-///
-/// __See also:__ [`sort`](https://vega.github.io/vega-lite/docs/sort.html) documentation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum SortUnion {
-    EncodingSortField(EncodingSortField),
-    Enum(Sort),
-    UnionArray(Vec<SelectionInitInterval>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ColorCondition {
-    ConditionalPValueDefGradientStringNullExprRef(ConditionalPValueDefGradientStringNullExprRef),
-    ConditionalValueDefGradientStringNullExprRefArray(
-        Vec<ConditionalValueDefGradientStringNullExprRef>,
-    ),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ConditionalValueDefGradientStringNullExprRefValue {
-    String(String),
-    ValueLinearGradient(ValueLinearGradient),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum SortArray {
-    Enum(SortOrder),
-    SortEncodingSortField(SortEncodingSortField),
-    UnionArray(Vec<SelectionInitInterval>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum DescriptionBin {
-    BinParams(BinParams),
-    Bool(bool),
-    Enum(BinEnum),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum DescriptionCondition {
-    PurpleConditionalPExprRef(PurpleConditionalPExprRef),
-    PurpleConditionalValueDefStringExprRefArray(Vec<PurpleConditionalValueDefStringExprRef>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Detail {
-    TypedFieldDef(TypedFieldDef),
-    TypedFieldDefArray(Vec<TypedFieldDef>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Spacing {
-    Double(f64),
-    RowColNumber(RowColNumber),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Latitude2Value {
-    BackgroundExprRef(BackgroundExprRef),
-    Double(f64),
-    Enum(ValueEnum),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Order {
-    OrderDef(OrderDef),
-    OrderFieldDefArray(Vec<OrderFieldDef>),
-}
-
-/// One or more value definition(s) with [a parameter or a test
-/// predicate](https://vega.github.io/vega-lite/docs/condition.html).
-///
-/// __Note:__ A field definition's `condition` property can only contain [conditional value
-/// definitions](https://vega.github.io/vega-lite/docs/condition.html#value) since Vega-Lite
-/// only allows at most one encoded field per encoding channel.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum OrderFieldDefCondition {
-    ConditionalPValueDefNumber(ConditionalPValueDefNumber),
-    ConditionalValueDefNumberArray(Vec<ConditionalValueDefNumber>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Stack {
-    Bool(bool),
-    Enum(StackOffset),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ShapeCondition {
-    ConditionalPValueDefStringNullExprRef(ConditionalPValueDefStringNullExprRef),
-    ConditionalValueDefStringNullExprRefArray(Vec<ConditionalValueDefStringNullExprRef>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum StrokeDashCondition {
-    ConditionalParameterValueDefNumberExprRefClass(ConditionalParameterValueDefNumberExprRefClass),
-    ConditionalValueDefNumberExprRefElementArray(Vec<ConditionalValueDefNumberExprRefElement>),
-}
-
-/// The projection’s translation offset as a two-element array `[tx, ty]`.
-///
-/// A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient
-/// definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values
-/// between `0` to `1` for opacity).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ConditionalValueDefNumberExprRefValueUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    DoubleArray(Vec<f64>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TextCondition {
-    ConditionalP(ConditionalP),
-    ConditionalValueDefTextExprRefArray(Vec<ConditionalValueDefTextExprRef>),
-}
-
-/// A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient
-/// definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values
-/// between `0` to `1` for opacity).
-///
-/// The title text.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ConditionalValueDefTextExprRefText {
-    BackgroundExprRef(BackgroundExprRef),
-    String(String),
-    StringArray(Vec<String>),
-}
-
-/// A constant value in visual domain (e.g., `"red"` / `"#0099ff"` / [gradient
-/// definition](https://vega.github.io/vega-lite/docs/types.html#gradient) for color, values
-/// between `0` to `1` for opacity).
-///
-/// The title text.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ConditionalPredicateValueDefTextExprRefText {
-    BackgroundExprRef(BackgroundExprRef),
-    String(String),
-    StringArray(Vec<String>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum EncodingTooltip {
-    FieldOrDatumDefWithConditionStringFieldDefString(
-        FieldOrDatumDefWithConditionStringFieldDefString,
-    ),
-    StringFieldDefArray(Vec<StringFieldDef>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum FieldOrDatumDefWithConditionStringFieldDefStringCondition {
-    FluffyConditionalPExprRef(FluffyConditionalPExprRef),
-    FluffyConditionalValueDefStringExprRefArray(Vec<FluffyConditionalValueDefStringExprRef>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Cap {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(StrokeCap),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum GridColorUnion {
-    GridColorExprRef(GridColorExprRef),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ConditionUnion {
-    ConditionClass(ConditionClass),
-    ConditionalPredicateValueDefColorNullExprRefArray(
-        Vec<ConditionalPredicateValueDefColorNullExprRef>,
-    ),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum AxisGridDash {
-    DoubleArray(Vec<f64>),
-    PurpleExprRef(PurpleExprRef),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TentacledConditionalPredicateValueDefNumberNullExprRef {
-    ConditionalPredicateValueDefNumberNullExprRefArray(
-        Vec<ConditionalPredicateValueDefNumberNullExprRef>,
-    ),
-    PurpleConditionalPredicateValueDefNumberNullExprRef(
-        PurpleConditionalPredicateValueDefNumberNullExprRef,
-    ),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum GridDashOffsetUnion {
-    Double(f64),
-    GridDashOffsetExprRef(GridDashOffsetExprRef),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum StickyConditionalPredicateValueDefNumberNullExprRef {
-    ConditionalPredicateValueDefNumberNullExprRefElementArray(
-        Vec<ConditionalPredicateValueDefNumberNullExprRefElement>,
-    ),
-    FluffyConditionalPredicateValueDefNumberNullExprRef(
-        FluffyConditionalPredicateValueDefNumberNullExprRef,
-    ),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum GridOpacityUnion {
-    Double(f64),
-    GridOpacityExprRef(GridOpacityExprRef),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum GridWidthUnion {
-    Double(f64),
-    GridWidthExprRef(GridWidthExprRef),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ConditionalAxisPropertyAlignNull {
-    Enum(Align),
-    FluffyExprRef(FluffyExprRef),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ExprRefCondition {
-    ConditionCondition(ConditionCondition),
-    ConditionalPredicateValueDefAlignNullExprRefArray(
-        Vec<ConditionalPredicateValueDefAlignNullExprRef>,
-    ),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum LabelAngle {
-    BackgroundExprRef(BackgroundExprRef),
-    Double(f64),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum PurpleTextBaseline {
-    Enum(Baseline),
-    TentacledExprRef(TentacledExprRef),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ExprRefConditionUnion {
-    ConditionConditionClass(ConditionConditionClass),
-    ConditionalPredicateValueDefTextBaselineNullExprRefArray(
-        Vec<ConditionalPredicateValueDefTextBaselineNullExprRef>,
-    ),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Label {
-    BackgroundExprRef(BackgroundExprRef),
-    Bool(bool),
-    Double(f64),
-}
-
-/// Indicates if labels should be hidden if they exceed the axis range. If `false` (the
-/// default) no bounds overlap analysis is performed. If `true`, labels will be hidden if
-/// they exceed the axis range by more than 1 pixel. If this property is a number, it
-/// specifies the pixel tolerance: the maximum amount by which a label bounding box may
-/// exceed the axis range.
-///
-/// __Default value:__ `false`.
-///
-/// Indicates if the first and last axis labels should be aligned flush with the scale range.
-/// Flush alignment for a horizontal axis will left-align the first label and right-align the
-/// last label. For vertical axes, bottom and top text baselines are applied instead. If this
-/// property is a number, it also indicates the number of pixels by which to offset the first
-/// and last labels; for example, a value of 2 will flush-align the first and last labels and
-/// also push them 2 pixels outward from the center of the axis. The additional adjustment
-/// can sometimes help the labels better visually group with corresponding axis ticks.
-///
-/// __Default value:__ `true` for axis of a continuous x-scale. Otherwise, `false`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum LabelFlush {
-    Bool(bool),
-    Double(f64),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ConditionalAxisPropertyStringNull {
-    StickyExprRef(StickyExprRef),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum FluffyConditionalPredicateValueDefStringNullExprRef {
-    ConditionalPredicateValueDefStringNullExprRefArray(
-        Vec<ConditionalPredicateValueDefStringNullExprRef>,
-    ),
-    PurpleConditionalPredicateValueDefStringNullExprRef(
-        PurpleConditionalPredicateValueDefStringNullExprRef,
-    ),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ConditionalAxisPropertyFontStyleNull {
-    IndigoExprRef(IndigoExprRef),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum FluffyConditionalPredicateValueDefFontStyleNullExprRef {
-    ConditionalPredicateValueDefFontStyleNullExprRefArray(
-        Vec<ConditionalPredicateValueDefFontStyleNullExprRef>,
-    ),
-    PurpleConditionalPredicateValueDefFontStyleNullExprRef(
-        PurpleConditionalPredicateValueDefFontStyleNullExprRef,
-    ),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum FontWeight {
-    Double(f64),
-    Enum(FontWeightEnum),
-    IndecentExprRef(IndecentExprRef),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum FluffyConditionalPredicateValueDefFontWeightNullExprRef {
-    ConditionalPredicateValueDefFontWeightNullExprRefArray(
-        Vec<ConditionalPredicateValueDefFontWeightNullExprRef>,
-    ),
-    PurpleConditionalPredicateValueDefFontWeightNullExprRef(
-        PurpleConditionalPredicateValueDefFontWeightNullExprRef,
-    ),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ValueUnion {
-    Double(f64),
-    Enum(FontWeightEnum),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TickBandUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(TickBandEnum),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum AxisTickDash {
-    DoubleArray(Vec<f64>),
-    HilariousExprRef(HilariousExprRef),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Keyvals {
-    AnythingArray(Vec<Option<serde_json::Value>>),
-    ImputeSequence(ImputeSequence),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum SpecHeight {
-    Double(f64),
-    Enum(HeightEnum),
-    Step(Box<Step>),
-}
-
-/// A string describing the mark type (one of `"bar"`, `"circle"`, `"square"`, `"tick"`,
-/// `"line"`, `"area"`, `"point"`, `"rule"`, `"geoshape"`, and `"text"`) or a [mark
-/// definition object](https://vega.github.io/vega-lite/docs/mark.html#mark-def).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum AnyMark {
-    Def(Def),
-    Enum(Mark),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Angle {
-    BackgroundExprRef(BackgroundExprRef),
-    Double(f64),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum AnyMarkConfig {
-    Bool(bool),
-    Config(Config),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum BlendUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(BlendEnum),
-}
-
-/// Default color.
-///
-/// __Default value:__ <span style="color: #4682b4;">&#9632;</span> `"#4682b4"`
-///
-/// __Note:__
-/// - This property cannot be used in a [style
-/// config](https://vega.github.io/vega-lite/docs/mark.html#style-config).
-/// - The `fill` and `stroke` properties have higher precedence than `color` and will
-/// override `color`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum MarkConfigColor {
-    ColorLinearGradient(ColorLinearGradient),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum CursorUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(Cursor),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Dir {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(TextDirection),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum DiscreteBandSize {
-    Double(f64),
-    RelativeBandSize(RelativeBandSize),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum MarkConfigFill {
-    FillLinearGradient(FillLinearGradient),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Opacity {
-    BackgroundExprRef(BackgroundExprRef),
-    Double(f64),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum MarkConfigInterpolate {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(Interpolate),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Line {
-    Bool(bool),
-    OverlayMarkDef(OverlayMarkDef),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum StrokeJoinUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(StrokeJoin),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum OverlayMarkDefTooltip {
-    Bool(bool),
-    Double(f64),
-    String(String),
-    TooltipContent(TooltipContent),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum XUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Double(f64),
-    Enum(XEnum),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum YUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Double(f64),
-    Enum(YEnum),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum PointUnion {
-    Bool(bool),
-    Enum(PointEnum),
-    OverlayMarkDef(OverlayMarkDef),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum MarkDefExtent {
-    Double(f64),
-    Enum(ExtentExtent),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum BoxPlotDefHeight {
-    Double(f64),
-    RelativeBandSizeClass(RelativeBandSizeClass),
-}
-
-/// When set, a selection is populated by input elements (also known as dynamic query
-/// widgets) or by interacting with the corresponding legend. Direct manipulation interaction
-/// is disabled by default; to re-enable it, set the selection's
-/// [`on`](https://vega.github.io/vega-lite/docs/selection.html#common-selection-properties)
-/// property.
-///
-/// Legend bindings are restricted to selections that only specify a single field or
-/// encoding.
-///
-/// Query widget binding takes the form of Vega's [input element binding
-/// definition](https://vega.github.io/vega/docs/signals/#bind) or can be a mapping between
-/// projected field/encodings and binding definitions.
-///
-/// __See also:__ [`bind`](https://vega.github.io/vega-lite/docs/bind.html) documentation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ParamBind {
-    Enum(LegendBinding),
-    UnionMap(HashMap<String, PurpleStream>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum PurpleStream {
-    AnythingArray(Vec<Option<serde_json::Value>>),
-    Double(f64),
-    PurpleBinding(PurpleBinding),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ElementUnion {
-    ElementClass(ElementClass),
-    String(String),
-}
-
-/// Determines the default event processing and data query for the selection. Vega-Lite
-/// currently supports two selection types:
-///
-/// - `"point"` -- to select multiple discrete data values; the first value is selected on
-/// `click` and additional values toggled on shift-click.
-/// - `"interval"` -- to select a continuous range of data values on `drag`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ParamSelect {
-    Enum(SelectionType),
-    SelectionConfig(SelectionConfig),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ClearUnion {
-    Bool(bool),
-    ClearDerivedStream(ClearDerivedStream),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum OnUnion {
-    OnDerivedStream(OnDerivedStream),
-    String(String),
-}
-
-/// Controls whether data values should be toggled (inserted or removed from a point
-/// selection) or only ever inserted into point selections.
-///
-/// One of:
-/// - `true` -- the default behavior, which corresponds to `"event.shiftKey"`.  As a result,
-/// data values are toggled when the user interacts with the shift-key pressed.
-/// - `false` -- disables toggling behaviour; the selection will only ever contain a single
-/// data value corresponding to the most recent interaction.
-/// - A [Vega expression](https://vega.github.io/vega/docs/expressions/) which is
-/// re-evaluated as the user interacts. If the expression evaluates to `true`, the data value
-/// is toggled into or out of the point selection. If the expression evaluates to `false`,
-/// the point selection is first cleared, and the data value is then inserted. For example,
-/// setting the value to the Vega expression `"true"` will toggle data values without the
-/// user pressing the shift-key.
-///
-/// __Default value:__ `true`
-///
-/// __See also:__ [`toggle`
-/// examples](https://vega.github.io/vega-lite/docs/selection.html#toggle) in the
-/// documentation.
-///
-/// When truthy, allows a user to interactively move an interval selection back-and-forth.
-/// Can be `true`, `false` (to disable panning), or a [Vega event stream
-/// definition](https://vega.github.io/vega/docs/event-streams/) which must include a start
-/// and end event to trigger continuous panning. Discrete panning (e.g., pressing the
-/// left/right arrow keys) will be supported in future versions.
-///
-/// __Default value:__ `true`, which corresponds to `[mousedown, window:mouseup] >
-/// window:mousemove!`. This default allows users to clicks and drags within an interval
-/// selection to reposition it.
-///
-/// __See also:__ [`translate`
-/// examples](https://vega.github.io/vega-lite/docs/selection.html#translate) in the
-/// documentation.
-///
-/// When truthy, allows a user to interactively resize an interval selection. Can be `true`,
-/// `false` (to disable zooming), or a [Vega event stream
-/// definition](https://vega.github.io/vega/docs/event-streams/). Currently, only `wheel`
-/// events are supported, but custom event streams can still be used to specify filters,
-/// debouncing, and throttling. Future versions will expand the set of events that can
-/// trigger this transformation.
-///
-/// __Default value:__ `true`, which corresponds to `wheel!`. This default allows users to
-/// use the mouse wheel to resize an interval selection.
-///
-/// __See also:__ [`zoom`
-/// examples](https://vega.github.io/vega-lite/docs/selection.html#zoom) in the documentation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Toggle {
-    Bool(bool),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ParamValue {
-    Bool(bool),
-    Double(f64),
-    String(String),
-    UnionMap(HashMap<String, DateTimeValue>),
-    UnionMapArray(Vec<HashMap<String, Option<SelectionInit>>>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum SelectionInit {
-    Bool(bool),
-    DateTime(DateTime),
-    Double(f64),
-    String(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum DateTimeValue {
-    Bool(bool),
-    Double(f64),
-    String(String),
-    UnionArray(Vec<SelectionInitInterval>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum ClipExtentUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    DoubleArrayArray(Vec<Vec<f64>>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Fit {
-    AnythingArray(Vec<Option<serde_json::Value>>),
-    BackgroundExprRef(BackgroundExprRef),
-}
-
-/// The cartographic projection to use. This value is case-insensitive, for example
-/// `"albers"` and `"Albers"` indicate the same projection type. You can find all valid
-/// projection types [in the
-/// documentation](https://vega.github.io/vega-lite/docs/projection.html#projection-types).
-///
-/// __Default value:__ `equalEarth`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TypeUnion {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(ProjectionType),
-}
-
-/// Title for the plot.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TitleUnion {
-    String(String),
-    StringArray(Vec<String>),
-    TitleParams(Box<TitleParams>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TitleParamsOrient {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(TitleOrient),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum RepeatUnion {
-    RepeatMapping(RepeatMapping),
-    StringArray(Vec<String>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum AxisBandGridDash {
-    AmbitiousExprRef(AmbitiousExprRef),
-    DoubleArray(Vec<f64>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum AxisBandTickDash {
-    CunningExprRef(CunningExprRef),
-    DoubleArray(Vec<f64>),
-}
-
-/// The extent of the whiskers. Available options include:
-/// - `"min-max"`: min and max are the lower and upper whiskers respectively.
-/// - A number representing multiple of the interquartile range. This number will be
-/// multiplied by the IQR to determine whisker boundary, which spans from the smallest data
-/// to the largest data within the range _[Q1 - k * IQR, Q3 + k * IQR]_ where _Q1_ and _Q3_
-/// are the first and third quartiles while _IQR_ is the interquartile range (_Q3-Q1_).
-///
-/// __Default value:__ `1.5`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum BoxplotExtent {
-    Double(f64),
-    Enum(ExtentEnum),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Direction {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(Orientation),
-}
-
-/// The default visualization padding, in pixels, from the edge of the visualization canvas
-/// to the data rectangle. If a number, specifies padding for all sides. If an object, the
-/// value should have the format `{"left": 5, "top": 5, "right": 5, "bottom": 5}` to specify
-/// padding for each side of the visualization.
-///
-/// __Default value__: `5`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum Padding {
-    Double(f64),
-    MagentaExprRef(MagentaExprRef),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TopLevelParameterBind {
-    Enum(LegendBinding),
-    UnionMap(HashMap<String, BindingValue>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum BindingValue {
-    AnythingArray(Vec<Option<serde_json::Value>>),
-    BindingBinding(BindingBinding),
-    Double(f64),
-    String(String),
-}
-
-/// Determines the default event processing and data query for the selection. Vega-Lite
-/// currently supports two selection types:
-///
-/// - `"point"` -- to select multiple discrete data values; the first value is selected on
-/// `click` and additional values toggled on shift-click.
-/// - `"interval"` -- to select a continuous range of data values on `drag`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TopLevelParameterSelect {
-    Enum(SelectionType),
-    SelectionConfig(SelectionConfig),
-}
-
-/// A string or array of strings indicating the name of custom styles to apply to the mark. A
-/// style is a named collection of mark property defaults defined within the [style
-/// configuration](https://vega.github.io/vega-lite/docs/mark.html#style-config). If style is
-/// an array, later styles will override earlier styles. Any [mark
-/// properties](https://vega.github.io/vega-lite/docs/encoding.html#mark-prop) explicitly
-/// defined within the `encoding` will override a style default.
-///
-/// __Default value:__ The mark's name. For example, a bar mark will have style `"bar"` by
-/// default. __Note:__ Any specified style will augment the default style. For example, a bar
-/// mark with `"style": "foo"` will receive from `config.style.bar` and `config.style.foo`
-/// (the specified style `"foo"` has higher precedence).
-///
-/// A string or array of strings indicating the name of custom styles to apply to the axis. A
-/// style is a named collection of axis property defined within the [style
-/// configuration](https://vega.github.io/vega-lite/docs/mark.html#style-config). If style is
-/// an array, later styles will override earlier styles.
-///
-/// __Default value:__ (none) __Note:__ Any specified style will augment the default style.
-/// For example, an x-axis mark with `"style": "foo"` will use `config.axisX` and
-/// `config.style.foo` (the specified style `"foo"` has higher precedence).
-///
-/// A [mark style property](https://vega.github.io/vega-lite/docs/config.html#style) to apply
-/// to the title text mark.
-///
-/// __Default value:__ `"group-title"`.
-///
-/// Placeholder text if the `text` channel is not specified
-///
-/// The subtitle Text.
-///
-/// A string or array of strings indicating the name of custom styles to apply to the view
-/// background. A style is a named collection of mark property defaults defined within the
-/// [style configuration](https://vega.github.io/vega-lite/docs/mark.html#style-config). If
-/// style is an array, later styles will override earlier styles.
-///
-/// __Default value:__ `"cell"` __Note:__ Any specified view background properties will
-/// augment the default style.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum TextElement {
-    String(String),
-    StringArray(Vec<String>),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum RangeValue {
-    AnythingArray(Vec<Option<serde_json::Value>>),
-    Enum(RangeEnum),
-    RangeClass(RangeClass),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum StyleOrient {
-    BackgroundExprRef(BackgroundExprRef),
-    Enum(AxisOrient),
-}
-
-/// The default height when the plot has non arc marks and either a discrete y-field or no
-/// y-field. The height can be either a number indicating a fixed height or an object in the
-/// form of `{step: number}` defining the height per discrete step.
-///
-/// __Default value:__ a step size based on `config.view.step`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum DiscreteHeightUnion {
-    DiscreteHeightClass(DiscreteHeightClass),
-    Double(f64),
-}
-
-/// The default width when the plot has non-arc marks and either a discrete x-field or no
-/// x-field. The width can be either a number indicating a fixed width or an object in the
-/// form of `{step: number}` defining the width per discrete step.
-///
-/// __Default value:__ a step size based on `config.view.step`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum DiscreteWidthUnion {
-    DiscreteWidthClass(DiscreteWidthClass),
-    Double(f64),
-}
-
-/// The full data set, included inline. This can be an array of objects or primitive values,
-/// an object, or a string. Arrays of primitive values are ingested as objects with a `data`
-/// property. Strings are parsed according to the specified format type.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-#[derive(From)]
-pub enum InlineDatasetValue {
-    AnythingMap(HashMap<String, Option<serde_json::Value>>),
-    String(String),
-    UnionArray(Vec<serde_json::value::Value>),
-}
-
-/// The alignment to apply to symbol legends rows and columns. The supported string values
-/// are `"all"`, `"each"` (the default), and `none`. For more information, see the [grid
-/// layout documentation](https://vega.github.io/vega/docs/layout).
-///
-/// __Default value:__ `"each"`.
-///
-/// The alignment to apply to row/column facet's subplot. The supported string values are
-/// `"all"`, `"each"`, and `"none"`.
-///
-/// - For `"none"`, a flow layout will be used, in which adjacent subviews are simply placed
-/// one after the other.
-/// - For `"each"`, subviews will be aligned into a clean grid structure, but each row or
-/// column may be of variable size.
-/// - For `"all"`, subviews will be aligned and each row or column will be sized identically
-/// based on the maximum observed size. String values for this property will be applied to
-/// both grid rows and columns.
-///
-/// __Default value:__ `"all"`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum LayoutAlign {
-    #[serde(rename = "all")]
-    All,
-    #[serde(rename = "each")]
-    Each,
-    #[serde(rename = "none")]
-    None,
-}
-
-/// The sizing format type. One of `"pad"`, `"fit"`, `"fit-x"`, `"fit-y"`,  or `"none"`. See
-/// the [autosize type](https://vega.github.io/vega-lite/docs/size.html#autosize)
-/// documentation for descriptions of each.
-///
-/// __Default value__: `"pad"`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum AutosizeType {
-    #[serde(rename = "fit")]
-    Fit,
-    #[serde(rename = "fit-x")]
-    FitX,
-    #[serde(rename = "fit-y")]
-    FitY,
-    #[serde(rename = "none")]
-    None,
-    #[serde(rename = "pad")]
-    Pad,
-}
-
-/// Determines how size calculation should be performed, one of `"content"` or `"padding"`.
-/// The default setting (`"content"`) interprets the width and height settings as the data
-/// rectangle (plotting) dimensions, to which padding is then added. In contrast, the
-/// `"padding"` setting includes the padding within the view size calculations, such that the
-/// width and height settings indicate the **total** intended size of the view.
-///
-/// __Default value__: `"content"`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Contains {
-    #[serde(rename = "content")]
-    Content,
-    #[serde(rename = "padding")]
-    Padding,
-}
-
-/// The bounds calculation method to use for determining the extent of a sub-plot. One of
-/// `full` (the default) or `flush`.
-///
-/// - If set to `full`, the entire calculated bounds (including axes, title, and legend) will
-/// be used.
-/// - If set to `flush`, only the specified width and height values for the sub-view will be
-/// used. The `flush` setting can be useful when attempting to place sub-plots without axes
-/// or legends into a uniform grid structure.
-///
-/// __Default value:__ `"full"`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Bounds {
-    #[serde(rename = "flush")]
-    Flush,
-    #[serde(rename = "full")]
-    Full,
-}
-
-/// Type of input data: `"json"`, `"csv"`, `"tsv"`, `"dsv"`.
-///
-/// __Default value:__  The default format type is determined by the extension of the file
-/// URL. If no extension is detected, `"json"` will be used by default.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum DataFormatType {
-    #[serde(rename = "csv")]
-    Csv,
-    #[serde(rename = "dsv")]
-    Dsv,
-    #[serde(rename = "json")]
-    Json,
-    #[serde(rename = "topojson")]
-    Topojson,
-    #[serde(rename = "tsv")]
-    Tsv,
-}
-
-/// An [aggregate operation](https://vega.github.io/vega-lite/docs/aggregate.html#ops) to
-/// perform on the field prior to sorting (e.g., `"count"`, `"mean"` and `"median"`). An
-/// aggregation is required when there are multiple values of the sort field for each encoded
-/// data field. The input data objects will be aggregated, grouped by the encoded data
-/// field.
-///
-/// For a full list of operations, please see the documentation for
-/// [aggregate](https://vega.github.io/vega-lite/docs/aggregate.html#ops).
-///
-/// __Default value:__ `"sum"` for stacked plots. Otherwise, `"min"`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum NonArgAggregateOp {
-    #[serde(rename = "average")]
-    Average,
-    #[serde(rename = "ci0")]
-    Ci0,
-    #[serde(rename = "ci1")]
-    Ci1,
-    #[serde(rename = "count")]
-    Count,
-    #[serde(rename = "distinct")]
-    Distinct,
-    #[serde(rename = "max")]
-    Max,
-    #[serde(rename = "mean")]
-    Mean,
-    #[serde(rename = "median")]
-    Median,
-    #[serde(rename = "min")]
-    Min,
-    #[serde(rename = "missing")]
-    Missing,
-    #[serde(rename = "product")]
-    Product,
-    #[serde(rename = "q1")]
-    Q1,
-    #[serde(rename = "q3")]
-    Q3,
-    #[serde(rename = "stderr")]
-    Stderr,
-    #[serde(rename = "stdev")]
-    Stdev,
-    #[serde(rename = "stdevp")]
-    Stdevp,
-    #[serde(rename = "sum")]
-    Sum,
-    #[serde(rename = "valid")]
-    Valid,
-    #[serde(rename = "values")]
-    Values,
-    #[serde(rename = "variance")]
-    Variance,
-    #[serde(rename = "variancep")]
-    Variancep,
-}
-
-/// If a selection parameter is specified, the encoding channel to extract selected values
-/// for when a selection is
-/// [projected](https://vega.github.io/vega-lite/docs/selection.html#project) over multiple
-/// fields or encodings.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum SingleDefUnitChannel {
-    #[serde(rename = "angle")]
-    Angle,
-    #[serde(rename = "color")]
-    Color,
-    #[serde(rename = "description")]
-    Description,
-    #[serde(rename = "fill")]
-    Fill,
-    #[serde(rename = "fillOpacity")]
-    FillOpacity,
-    #[serde(rename = "href")]
-    Href,
-    #[serde(rename = "key")]
-    Key,
-    #[serde(rename = "latitude")]
-    Latitude,
-    #[serde(rename = "latitude2")]
-    Latitude2,
-    #[serde(rename = "longitude")]
-    Longitude,
-    #[serde(rename = "longitude2")]
-    Longitude2,
-    #[serde(rename = "opacity")]
-    Opacity,
-    #[serde(rename = "radius")]
-    Radius,
-    #[serde(rename = "radius2")]
-    Radius2,
-    #[serde(rename = "shape")]
-    Shape,
-    #[serde(rename = "size")]
-    Size,
-    #[serde(rename = "stroke")]
-    Stroke,
-    #[serde(rename = "strokeDash")]
-    StrokeDash,
-    #[serde(rename = "strokeOpacity")]
-    StrokeOpacity,
-    #[serde(rename = "strokeWidth")]
-    StrokeWidth,
-    #[serde(rename = "text")]
-    Text,
-    #[serde(rename = "theta")]
-    Theta,
-    #[serde(rename = "theta2")]
-    Theta2,
-    #[serde(rename = "url")]
-    Url,
-    #[serde(rename = "x")]
-    X,
-    #[serde(rename = "x2")]
-    X2,
-    #[serde(rename = "xOffset")]
-    XOffset,
-    #[serde(rename = "y")]
-    Y,
-    #[serde(rename = "y2")]
-    Y2,
-    #[serde(rename = "yOffset")]
-    YOffset,
-}
-
-/// Defines how date-time values should be binned.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TimeUnit {
-    #[serde(rename = "date")]
-    Date,
-    #[serde(rename = "day")]
-    Day,
-    #[serde(rename = "dayhours")]
-    Dayhours,
-    #[serde(rename = "dayhoursminutes")]
-    Dayhoursminutes,
-    #[serde(rename = "dayhoursminutesseconds")]
-    Dayhoursminutesseconds,
-    #[serde(rename = "dayofyear")]
-    Dayofyear,
-    #[serde(rename = "hours")]
-    Hours,
-    #[serde(rename = "hoursminutes")]
-    Hoursminutes,
-    #[serde(rename = "hoursminutesseconds")]
-    Hoursminutesseconds,
-    #[serde(rename = "milliseconds")]
-    Milliseconds,
-    #[serde(rename = "minutes")]
-    Minutes,
-    #[serde(rename = "minutesseconds")]
-    Minutesseconds,
-    #[serde(rename = "month")]
-    Month,
-    #[serde(rename = "monthdate")]
-    Monthdate,
-    #[serde(rename = "monthdatehours")]
-    Monthdatehours,
-    #[serde(rename = "monthdatehoursminutes")]
-    Monthdatehoursminutes,
-    #[serde(rename = "monthdatehoursminutesseconds")]
-    Monthdatehoursminutesseconds,
-    #[serde(rename = "quarter")]
-    Quarter,
-    #[serde(rename = "quartermonth")]
-    Quartermonth,
-    #[serde(rename = "seconds")]
-    Seconds,
-    #[serde(rename = "secondsmilliseconds")]
-    Secondsmilliseconds,
-    #[serde(rename = "utcdate")]
-    Utcdate,
-    #[serde(rename = "utcday")]
-    Utcday,
-    #[serde(rename = "utcdayhours")]
-    Utcdayhours,
-    #[serde(rename = "utcdayhoursminutes")]
-    Utcdayhoursminutes,
-    #[serde(rename = "utcdayhoursminutesseconds")]
-    Utcdayhoursminutesseconds,
-    #[serde(rename = "utcdayofyear")]
-    Utcdayofyear,
-    #[serde(rename = "utchours")]
-    Utchours,
-    #[serde(rename = "utchoursminutes")]
-    Utchoursminutes,
-    #[serde(rename = "utchoursminutesseconds")]
-    Utchoursminutesseconds,
-    #[serde(rename = "utcmilliseconds")]
-    Utcmilliseconds,
-    #[serde(rename = "utcminutes")]
-    Utcminutes,
-    #[serde(rename = "utcminutesseconds")]
-    Utcminutesseconds,
-    #[serde(rename = "utcmonth")]
-    Utcmonth,
-    #[serde(rename = "utcmonthdate")]
-    Utcmonthdate,
-    #[serde(rename = "utcmonthdatehours")]
-    Utcmonthdatehours,
-    #[serde(rename = "utcmonthdatehoursminutes")]
-    Utcmonthdatehoursminutes,
-    #[serde(rename = "utcmonthdatehoursminutesseconds")]
-    Utcmonthdatehoursminutesseconds,
-    #[serde(rename = "utcquarter")]
-    Utcquarter,
-    #[serde(rename = "utcquartermonth")]
-    Utcquartermonth,
-    #[serde(rename = "utcseconds")]
-    Utcseconds,
-    #[serde(rename = "utcsecondsmilliseconds")]
-    Utcsecondsmilliseconds,
-    #[serde(rename = "utcweek")]
-    Utcweek,
-    #[serde(rename = "utcweekday")]
-    Utcweekday,
-    #[serde(rename = "utcweekdayhoursminutes")]
-    Utcweekdayhoursminutes,
-    #[serde(rename = "utcweekdayhoursminutesseconds")]
-    Utcweekdayhoursminutesseconds,
-    #[serde(rename = "utcweeksdayhours")]
-    Utcweeksdayhours,
-    #[serde(rename = "utcyear")]
-    Utcyear,
-    #[serde(rename = "utcyeardayofyear")]
-    Utcyeardayofyear,
-    #[serde(rename = "utcyearmonth")]
-    Utcyearmonth,
-    #[serde(rename = "utcyearmonthdate")]
-    Utcyearmonthdate,
-    #[serde(rename = "utcyearmonthdatehours")]
-    Utcyearmonthdatehours,
-    #[serde(rename = "utcyearmonthdatehoursminutes")]
-    Utcyearmonthdatehoursminutes,
-    #[serde(rename = "utcyearmonthdatehoursminutesseconds")]
-    Utcyearmonthdatehoursminutesseconds,
-    #[serde(rename = "utcyearquarter")]
-    Utcyearquarter,
-    #[serde(rename = "utcyearquartermonth")]
-    Utcyearquartermonth,
-    #[serde(rename = "utcyearweek")]
-    Utcyearweek,
-    #[serde(rename = "utcyearweekday")]
-    Utcyearweekday,
-    #[serde(rename = "utcyearweekdayhours")]
-    Utcyearweekdayhours,
-    #[serde(rename = "utcyearweekdayhoursminutes")]
-    Utcyearweekdayhoursminutes,
-    #[serde(rename = "utcyearweekdayhoursminutesseconds")]
-    Utcyearweekdayhoursminutesseconds,
-    #[serde(rename = "week")]
-    Week,
-    #[serde(rename = "weekday")]
-    Weekday,
-    #[serde(rename = "weekdayhoursminutes")]
-    Weekdayhoursminutes,
-    #[serde(rename = "weekdayhoursminutesseconds")]
-    Weekdayhoursminutesseconds,
-    #[serde(rename = "weeksdayhours")]
-    Weeksdayhours,
-    #[serde(rename = "year")]
-    Year,
-    #[serde(rename = "yeardayofyear")]
-    Yeardayofyear,
-    #[serde(rename = "yearmonth")]
-    Yearmonth,
-    #[serde(rename = "yearmonthdate")]
-    Yearmonthdate,
-    #[serde(rename = "yearmonthdatehours")]
-    Yearmonthdatehours,
-    #[serde(rename = "yearmonthdatehoursminutes")]
-    Yearmonthdatehoursminutes,
-    #[serde(rename = "yearmonthdatehoursminutesseconds")]
-    Yearmonthdatehoursminutesseconds,
-    #[serde(rename = "yearquarter")]
-    Yearquarter,
-    #[serde(rename = "yearquartermonth")]
-    Yearquartermonth,
-    #[serde(rename = "yearweek")]
-    Yearweek,
-    #[serde(rename = "yearweekday")]
-    Yearweekday,
-    #[serde(rename = "yearweekdayhours")]
-    Yearweekdayhours,
-    #[serde(rename = "yearweekdayhoursminutes")]
-    Yearweekdayhoursminutes,
-    #[serde(rename = "yearweekdayhoursminutesseconds")]
-    Yearweekdayhoursminutesseconds,
-}
-
-/// The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for
-/// the encoded field or constant value (`datum`). It can also be a `"geojson"` type for
-/// encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
-///
-/// Vega-Lite automatically infers data types in many cases as discussed below. However, type
-/// is required for a field if: (1) the field is not nominal and the field encoding has no
-/// specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort`
-/// order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin`
-/// or `timeUnit`.
-///
-/// __Default value:__
-///
-/// 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has
-/// `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the
-/// following criteria:
-/// - `"quantitative"` is the default type if (1) the encoded field contains `bin` or
-/// `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or
-/// `longitude` channel or (3) if the specified scale type is [a quantitative
-/// scale](https://vega.github.io/vega-lite/docs/scale.html#type).
-/// - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2)
-/// the specified scale type is a time or utc scale
-/// - `"ordinal"` is the default type if (1) the encoded field contains a [custom `sort`
-/// order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2)
-/// the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is
-/// `order`.
-///
-/// 2) For a constant value in data domain (`datum`):
-/// - `"quantitative"` if the datum is a number
-/// - `"nominal"` if the datum is a string
-/// - `"temporal"` if the datum is [a date time
-/// object](https://vega.github.io/vega-lite/docs/datetime.html)
-///
-/// __Note:__
-/// - Data `type` describes the semantics of the data rather than the primitive data types
-/// (number, string, etc.). The same primitive data type can have different types of
-/// measurement. For example, numeric data can represent quantitative, ordinal, or nominal
-/// data.
-/// - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07
-/// 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g.,
-/// `1552199579097`).
-/// - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type`
-/// property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"`
-/// (for using an ordinal bin
-/// scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
-/// - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the
-/// `type` property can be either `"temporal"` (default, for using a temporal scale) or
-/// [`"ordinal"` (for using an ordinal
-/// scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
-/// - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html),
-/// the `type` property refers to the post-aggregation data type. For example, we can
-/// calculate count `distinct` of a categorical field `"cat"` using `{"aggregate":
-/// "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
-/// - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they
-/// must have exactly the same type as their primary channels (e.g., `x`, `y`).
-///
-/// __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
-///
-/// Data type based on level of measurement
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Type {
-    #[serde(rename = "geojson")]
-    Geojson,
-    #[serde(rename = "nominal")]
-    Nominal,
-    #[serde(rename = "ordinal")]
-    Ordinal,
-    #[serde(rename = "quantitative")]
-    Quantitative,
-    #[serde(rename = "temporal")]
-    Temporal,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum RepeatEnum {
-    #[serde(rename = "column")]
-    Column,
-    #[serde(rename = "layer")]
-    Layer,
-    #[serde(rename = "repeat")]
-    Repeat,
-    #[serde(rename = "row")]
-    Row,
-}
-
-/// The orientation of a non-stacked bar, tick, area, and line charts. The value is either
-/// horizontal (default) or vertical.
-/// - For bar, rule and tick, this determines whether the size of the bar and tick should be
-/// applied to x or y dimension.
-/// - For area, this property determines the orient property of the Vega output.
-/// - For line and trail marks, this property determines the sort order of the points in the
-/// line if `config.sortLineBy` is not specified. For stacked charts, this is always
-/// determined by the orientation of the stack; therefore explicitly specified value will be
-/// ignored.
-///
-/// The direction of the legend, one of `"vertical"` or `"horizontal"`.
-///
-/// __Default value:__
-/// - For top-/bottom-`orient`ed legends, `"horizontal"`
-/// - For left-/right-`orient`ed legends, `"vertical"`
-/// - For top/bottom-left/right-`orient`ed legends, `"horizontal"` for gradient legends and
-/// `"vertical"` for symbol legends.
-///
-/// The default direction (`"horizontal"` or `"vertical"`) for gradient legends.
-///
-/// __Default value:__ `"vertical"`.
-///
-/// The default direction (`"horizontal"` or `"vertical"`) for symbol legends.
-///
-/// __Default value:__ `"vertical"`.
-///
-/// Orientation of the box plot. This is normally automatically determined based on types of
-/// fields on x and y channels. However, an explicit `orient` be specified when the
-/// orientation is ambiguous.
-///
-/// __Default value:__ `"vertical"`.
-///
-/// Orientation of the error bar. This is normally automatically determined, but can be
-/// specified when the orientation is ambiguous and cannot be automatically determined.
-///
-/// Orientation of the error band. This is normally automatically determined, but can be
-/// specified when the orientation is ambiguous and cannot be automatically determined.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Orientation {
-    #[serde(rename = "horizontal")]
-    Horizontal,
-    #[serde(rename = "vertical")]
-    Vertical,
-}
-
-/// Horizontal text alignment of axis tick labels, overriding the default setting for the
-/// current axis orientation.
-///
-/// Horizontal text alignment of axis titles.
-///
-/// The alignment of the legend label, can be left, center, or right.
-///
-/// Horizontal text alignment for legend titles.
-///
-/// __Default value:__ `"left"`.
-///
-/// Horizontal text alignment for title text. One of `"left"`, `"center"`, or `"right"`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Align {
-    #[serde(rename = "center")]
-    Center,
-    #[serde(rename = "left")]
-    Left,
-    #[serde(rename = "right")]
-    Right,
-}
-
-/// Vertical text baseline of axis tick labels, overriding the default setting for the
-/// current axis orientation. One of `"alphabetic"` (default), `"top"`, `"middle"`,
-/// `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and `"line-bottom"` values
-/// operate similarly to `"top"` and `"bottom"`, but are calculated relative to the
-/// *lineHeight* rather than *fontSize* alone.
-///
-/// Vertical text baseline for axis titles. One of `"alphabetic"` (default), `"top"`,
-/// `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and
-/// `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated
-/// relative to the *lineHeight* rather than *fontSize* alone.
-///
-/// The position of the baseline of legend label, can be `"top"`, `"middle"`, `"bottom"`, or
-/// `"alphabetic"`.
-///
-/// __Default value:__ `"middle"`.
-///
-/// Vertical text baseline for legend titles.  One of `"alphabetic"` (default), `"top"`,
-/// `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and
-/// `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated
-/// relative to the *lineHeight* rather than *fontSize* alone.
-///
-/// __Default value:__ `"top"`.
-///
-/// Vertical text baseline for title and subtitle text. One of `"alphabetic"` (default),
-/// `"top"`, `"middle"`, `"bottom"`, `"line-top"`, or `"line-bottom"`. The `"line-top"` and
-/// `"line-bottom"` values operate similarly to `"top"` and `"bottom"`, but are calculated
-/// relative to the *lineHeight* rather than *fontSize* alone.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Baseline {
-    #[serde(rename = "alphabetic")]
-    Alphabetic,
-    #[serde(rename = "bottom")]
-    Bottom,
-    #[serde(rename = "line-bottom")]
-    LineBottom,
-    #[serde(rename = "line-top")]
-    LineTop,
-    #[serde(rename = "middle")]
-    Middle,
-    #[serde(rename = "top")]
-    Top,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum FontWeightEnum {
-    #[serde(rename = "bold")]
-    Bold,
-    #[serde(rename = "bolder")]
-    Bolder,
-    #[serde(rename = "lighter")]
-    Lighter,
-    #[serde(rename = "normal")]
-    Normal,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum LabelOverlapEnum {
-    #[serde(rename = "greedy")]
-    Greedy,
-    #[serde(rename = "parity")]
-    Parity,
-}
-
-/// The type of the legend. Use `"symbol"` to create a discrete legend and `"gradient"` for a
-/// continuous color gradient.
-///
-/// __Default value:__ `"gradient"` for non-binned quantitative fields and temporal fields;
-/// `"symbol"` otherwise.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum LegendType {
-    #[serde(rename = "gradient")]
-    Gradient,
-    #[serde(rename = "symbol")]
-    Symbol,
-}
-
-/// The orientation of the legend, which determines how the legend is positioned within the
-/// scene. One of `"left"`, `"right"`, `"top"`, `"bottom"`, `"top-left"`, `"top-right"`,
-/// `"bottom-left"`, `"bottom-right"`, `"none"`.
-///
-/// __Default value:__ `"right"`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum LegendOrient {
-    #[serde(rename = "bottom")]
-    Bottom,
-    #[serde(rename = "bottom-left")]
-    BottomLeft,
-    #[serde(rename = "bottom-right")]
-    BottomRight,
-    #[serde(rename = "left")]
-    Left,
-    #[serde(rename = "none")]
-    None,
-    #[serde(rename = "right")]
-    Right,
-    #[serde(rename = "top")]
-    Top,
-    #[serde(rename = "top-left")]
-    TopLeft,
-    #[serde(rename = "top-right")]
-    TopRight,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TimeInterval {
-    #[serde(rename = "day")]
-    Day,
-    #[serde(rename = "hour")]
-    Hour,
-    #[serde(rename = "millisecond")]
-    Millisecond,
-    #[serde(rename = "minute")]
-    Minute,
-    #[serde(rename = "month")]
-    Month,
-    #[serde(rename = "second")]
-    Second,
-    #[serde(rename = "week")]
-    Week,
-    #[serde(rename = "year")]
-    Year,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TitleAnchorEnum {
-    #[serde(rename = "end")]
-    End,
-    #[serde(rename = "middle")]
-    Middle,
-    #[serde(rename = "start")]
-    Start,
-}
-
-/// The orientation of the header label. One of `"top"`, `"bottom"`, `"left"` or `"right"`.
-///
-/// Shortcut for setting both labelOrient and titleOrient.
-///
-/// The orientation of the header title. One of `"top"`, `"bottom"`, `"left"` or `"right"`.
-///
-/// Orientation of the legend title.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Orient {
-    #[serde(rename = "bottom")]
-    Bottom,
-    #[serde(rename = "left")]
-    Left,
-    #[serde(rename = "right")]
-    Right,
-    #[serde(rename = "top")]
-    Top,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum DomainEnum {
-    #[serde(rename = "unaggregated")]
-    Unaggregated,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ExprRefType {
-    #[serde(rename = "cubehelix")]
-    Cubehelix,
-    #[serde(rename = "cubehelix-long")]
-    CubehelixLong,
-    #[serde(rename = "rgb")]
-    Rgb,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ScaleInterpolateEnum {
-    #[serde(rename = "cubehelix")]
-    Cubehelix,
-    #[serde(rename = "cubehelix-long")]
-    CubehelixLong,
-    #[serde(rename = "hcl")]
-    Hcl,
-    #[serde(rename = "hcl-long")]
-    HclLong,
-    #[serde(rename = "hsl")]
-    Hsl,
-    #[serde(rename = "hsl-long")]
-    HslLong,
-    #[serde(rename = "lab")]
-    Lab,
-    #[serde(rename = "rgb")]
-    Rgb,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum RangeEnum {
-    #[serde(rename = "category")]
-    Category,
-    #[serde(rename = "diverging")]
-    Diverging,
-    #[serde(rename = "heatmap")]
-    Heatmap,
-    #[serde(rename = "height")]
-    Height,
-    #[serde(rename = "ordinal")]
-    Ordinal,
-    #[serde(rename = "ramp")]
-    Ramp,
-    #[serde(rename = "symbol")]
-    Symbol,
-    #[serde(rename = "width")]
-    Width,
-}
-
-/// The type of scale. Vega-Lite supports the following categories of scale types:
-///
-/// 1) [**Continuous Scales**](https://vega.github.io/vega-lite/docs/scale.html#continuous)
-/// -- mapping continuous domains to continuous output ranges
-/// ([`"linear"`](https://vega.github.io/vega-lite/docs/scale.html#linear),
-/// [`"pow"`](https://vega.github.io/vega-lite/docs/scale.html#pow),
-/// [`"sqrt"`](https://vega.github.io/vega-lite/docs/scale.html#sqrt),
-/// [`"symlog"`](https://vega.github.io/vega-lite/docs/scale.html#symlog),
-/// [`"log"`](https://vega.github.io/vega-lite/docs/scale.html#log),
-/// [`"time"`](https://vega.github.io/vega-lite/docs/scale.html#time),
-/// [`"utc"`](https://vega.github.io/vega-lite/docs/scale.html#utc).
-///
-/// 2) [**Discrete Scales**](https://vega.github.io/vega-lite/docs/scale.html#discrete) --
-/// mapping discrete domains to discrete
-/// ([`"ordinal"`](https://vega.github.io/vega-lite/docs/scale.html#ordinal)) or continuous
-/// ([`"band"`](https://vega.github.io/vega-lite/docs/scale.html#band) and
-/// [`"point"`](https://vega.github.io/vega-lite/docs/scale.html#point)) output ranges.
-///
-/// 3) [**Discretizing
-/// Scales**](https://vega.github.io/vega-lite/docs/scale.html#discretizing) -- mapping
-/// continuous domains to discrete output ranges
-/// [`"bin-ordinal"`](https://vega.github.io/vega-lite/docs/scale.html#bin-ordinal),
-/// [`"quantile"`](https://vega.github.io/vega-lite/docs/scale.html#quantile),
-/// [`"quantize"`](https://vega.github.io/vega-lite/docs/scale.html#quantize) and
-/// [`"threshold"`](https://vega.github.io/vega-lite/docs/scale.html#threshold).
-///
-/// __Default value:__ please see the [scale type
-/// table](https://vega.github.io/vega-lite/docs/scale.html#type).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ScaleType {
-    #[serde(rename = "band")]
-    Band,
-    #[serde(rename = "bin-ordinal")]
-    BinOrdinal,
-    #[serde(rename = "identity")]
-    Identity,
-    #[serde(rename = "linear")]
-    Linear,
-    #[serde(rename = "log")]
-    Log,
-    #[serde(rename = "ordinal")]
-    Ordinal,
-    #[serde(rename = "point")]
-    Point,
-    #[serde(rename = "pow")]
-    Pow,
-    #[serde(rename = "quantile")]
-    Quantile,
-    #[serde(rename = "quantize")]
-    Quantize,
-    #[serde(rename = "sequential")]
-    Sequential,
-    #[serde(rename = "sqrt")]
-    Sqrt,
-    #[serde(rename = "symlog")]
-    Symlog,
-    #[serde(rename = "threshold")]
-    Threshold,
-    #[serde(rename = "time")]
-    Time,
-    #[serde(rename = "utc")]
-    Utc,
-}
-
-/// The [encoding channel](https://vega.github.io/vega-lite/docs/encoding.html#channels) to
-/// sort by (e.g., `"x"`, `"y"`)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum SortByChannel {
-    #[serde(rename = "color")]
-    Color,
-    #[serde(rename = "fill")]
-    Fill,
-    #[serde(rename = "fillOpacity")]
-    FillOpacity,
-    #[serde(rename = "opacity")]
-    Opacity,
-    #[serde(rename = "shape")]
-    Shape,
-    #[serde(rename = "size")]
-    Size,
-    #[serde(rename = "stroke")]
-    Stroke,
-    #[serde(rename = "strokeOpacity")]
-    StrokeOpacity,
-    #[serde(rename = "strokeWidth")]
-    StrokeWidth,
-    #[serde(rename = "text")]
-    Text,
-    #[serde(rename = "x")]
-    X,
-    #[serde(rename = "y")]
-    Y,
-}
-
-/// The sort order. One of `"ascending"` (default) or `"descending"`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum SortOrder {
-    #[serde(rename = "ascending")]
-    Ascending,
-    #[serde(rename = "descending")]
-    Descending,
-}
-
-/// The sort order. One of `"ascending"` (default) or `"descending"`.
-///
-/// The [encoding channel](https://vega.github.io/vega-lite/docs/encoding.html#channels) to
-/// sort by (e.g., `"x"`, `"y"`)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Sort {
-    #[serde(rename = "ascending")]
-    Ascending,
-    #[serde(rename = "color")]
-    Color,
-    #[serde(rename = "descending")]
-    Descending,
-    #[serde(rename = "fill")]
-    Fill,
-    #[serde(rename = "fillOpacity")]
-    FillOpacity,
-    #[serde(rename = "opacity")]
-    Opacity,
-    #[serde(rename = "shape")]
-    Shape,
-    #[serde(rename = "size")]
-    Size,
-    #[serde(rename = "-color")]
-    SortColor,
-    #[serde(rename = "-fill")]
-    SortFill,
-    #[serde(rename = "-fillOpacity")]
-    SortFillOpacity,
-    #[serde(rename = "-opacity")]
-    SortOpacity,
-    #[serde(rename = "-shape")]
-    SortShape,
-    #[serde(rename = "-size")]
-    SortSize,
-    #[serde(rename = "-stroke")]
-    SortStroke,
-    #[serde(rename = "-strokeOpacity")]
-    SortStrokeOpacity,
-    #[serde(rename = "-strokeWidth")]
-    SortStrokeWidth,
-    #[serde(rename = "-text")]
-    SortText,
-    #[serde(rename = "-x")]
-    SortX,
-    #[serde(rename = "-y")]
-    SortY,
-    #[serde(rename = "stroke")]
-    Stroke,
-    #[serde(rename = "strokeOpacity")]
-    StrokeOpacity,
-    #[serde(rename = "strokeWidth")]
-    StrokeWidth,
-    #[serde(rename = "text")]
-    Text,
-    #[serde(rename = "x")]
-    X,
-    #[serde(rename = "y")]
-    Y,
-}
-
-/// The type of gradient. Use `"linear"` for a linear gradient.
-///
-/// The type of gradient. Use `"radial"` for a radial gradient.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Gradient {
-    #[serde(rename = "linear")]
-    Linear,
-    #[serde(rename = "radial")]
-    Radial,
-}
-
-/// The type of measurement (`"quantitative"`, `"temporal"`, `"ordinal"`, or `"nominal"`) for
-/// the encoded field or constant value (`datum`). It can also be a `"geojson"` type for
-/// encoding ['geoshape'](https://vega.github.io/vega-lite/docs/geoshape.html).
-///
-/// Vega-Lite automatically infers data types in many cases as discussed below. However, type
-/// is required for a field if: (1) the field is not nominal and the field encoding has no
-/// specified `aggregate` (except `argmin` and `argmax`), `bin`, scale type, custom `sort`
-/// order, nor `timeUnit` or (2) if you wish to use an ordinal scale for a field with `bin`
-/// or `timeUnit`.
-///
-/// __Default value:__
-///
-/// 1) For a data `field`, `"nominal"` is the default data type unless the field encoding has
-/// `aggregate`, `channel`, `bin`, scale type, `sort`, or `timeUnit` that satisfies the
-/// following criteria:
-/// - `"quantitative"` is the default type if (1) the encoded field contains `bin` or
-/// `aggregate` except `"argmin"` and `"argmax"`, (2) the encoding channel is `latitude` or
-/// `longitude` channel or (3) if the specified scale type is [a quantitative
-/// scale](https://vega.github.io/vega-lite/docs/scale.html#type).
-/// - `"temporal"` is the default type if (1) the encoded field contains `timeUnit` or (2)
-/// the specified scale type is a time or utc scale
-/// - `"ordinal"` is the default type if (1) the encoded field contains a [custom `sort`
-/// order](https://vega.github.io/vega-lite/docs/sort.html#specifying-custom-sort-order), (2)
-/// the specified scale type is an ordinal/point/band scale, or (3) the encoding channel is
-/// `order`.
-///
-/// 2) For a constant value in data domain (`datum`):
-/// - `"quantitative"` if the datum is a number
-/// - `"nominal"` if the datum is a string
-/// - `"temporal"` if the datum is [a date time
-/// object](https://vega.github.io/vega-lite/docs/datetime.html)
-///
-/// __Note:__
-/// - Data `type` describes the semantics of the data rather than the primitive data types
-/// (number, string, etc.). The same primitive data type can have different types of
-/// measurement. For example, numeric data can represent quantitative, ordinal, or nominal
-/// data.
-/// - Data values for a temporal field can be either a date-time string (e.g., `"2015-03-07
-/// 12:32:17"`, `"17:01"`, `"2015-03-16"`. `"2015"`) or a timestamp number (e.g.,
-/// `1552199579097`).
-/// - When using with [`bin`](https://vega.github.io/vega-lite/docs/bin.html), the `type`
-/// property can be either `"quantitative"` (for using a linear bin scale) or [`"ordinal"`
-/// (for using an ordinal bin
-/// scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
-/// - When using with [`timeUnit`](https://vega.github.io/vega-lite/docs/timeunit.html), the
-/// `type` property can be either `"temporal"` (default, for using a temporal scale) or
-/// [`"ordinal"` (for using an ordinal
-/// scale)](https://vega.github.io/vega-lite/docs/type.html#cast-bin).
-/// - When using with [`aggregate`](https://vega.github.io/vega-lite/docs/aggregate.html),
-/// the `type` property refers to the post-aggregation data type. For example, we can
-/// calculate count `distinct` of a categorical field `"cat"` using `{"aggregate":
-/// "distinct", "field": "cat"}`. The `"type"` of the aggregate output is `"quantitative"`.
-/// - Secondary channels (e.g., `x2`, `y2`, `xError`, `yError`) do not have `type` as they
-/// must have exactly the same type as their primary channels (e.g., `x`, `y`).
-///
-/// __See also:__ [`type`](https://vega.github.io/vega-lite/docs/type.html) documentation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum StandardType {
-    #[serde(rename = "nominal")]
-    Nominal,
-    #[serde(rename = "ordinal")]
-    Ordinal,
-    #[serde(rename = "quantitative")]
-    Quantitative,
-    #[serde(rename = "temporal")]
-    Temporal,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum BinEnum {
-    #[serde(rename = "binned")]
-    Binned,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ValueEnum {
-    #[serde(rename = "height")]
-    Height,
-    #[serde(rename = "width")]
-    Width,
-}
-
-/// Mode for stacking marks. One of `"zero"` (default), `"center"`, or `"normalize"`. The
-/// `"zero"` offset will stack starting at `0`. The `"center"` offset will center the stacks.
-/// The `"normalize"` offset will compute percentage values for each stack point, with output
-/// values in the range `[0,1]`.
-///
-/// __Default value:__ `"zero"`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum StackOffset {
-    #[serde(rename = "center")]
-    Center,
-    #[serde(rename = "normalize")]
-    Normalize,
-    #[serde(rename = "zero")]
-    Zero,
-}
-
-/// The stroke cap for line ending style. One of `"butt"`, `"round"`, or `"square"`.
-///
-/// __Default value:__ `"butt"`
-///
-/// The stroke cap for the domain line's ending style. One of `"butt"`, `"round"` or
-/// `"square"`.
-///
-/// __Default value:__ `"butt"`
-///
-/// The stroke cap for grid lines' ending style. One of `"butt"`, `"round"` or `"square"`.
-///
-/// __Default value:__ `"butt"`
-///
-/// The stroke cap for the tick lines' ending style. One of `"butt"`, `"round"` or
-/// `"square"`.
-///
-/// __Default value:__ `"butt"`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum StrokeCap {
-    #[serde(rename = "butt")]
-    Butt,
-    #[serde(rename = "round")]
-    Round,
-    #[serde(rename = "square")]
-    Square,
-}
-
-/// For band scales, indicates if ticks and grid lines should be placed at the `"center"` of
-/// a band (default) or at the band `"extent"`s to indicate intervals
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TickBandEnum {
-    #[serde(rename = "center")]
-    Center,
-    #[serde(rename = "extent")]
-    Extent,
-}
-
-/// The imputation method to use for the field value of imputed data objects. One of
-/// `"value"`, `"mean"`, `"median"`, `"max"` or `"min"`.
-///
-/// __Default value:__  `"value"`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ImputeParamsMethod {
-    #[serde(rename = "max")]
-    Max,
-    #[serde(rename = "mean")]
-    Mean,
-    #[serde(rename = "median")]
-    Median,
-    #[serde(rename = "min")]
-    Min,
-    #[serde(rename = "value")]
-    Value,
-}
-
-/// Whether to apply the step to position scale or offset scale when there are both `x` and
-/// `xOffset` or both `y` and `yOffset` encodings.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum StepFor {
-    #[serde(rename = "offset")]
-    Offset,
-    #[serde(rename = "position")]
-    Position,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum HeightEnum {
-    #[serde(rename = "container")]
-    Container,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum BlendEnum {
-    #[serde(rename = "color")]
-    Color,
-    #[serde(rename = "color-burn")]
-    ColorBurn,
-    #[serde(rename = "color-dodge")]
-    ColorDodge,
-    #[serde(rename = "darken")]
-    Darken,
-    #[serde(rename = "difference")]
-    Difference,
-    #[serde(rename = "exclusion")]
-    Exclusion,
-    #[serde(rename = "hard-light")]
-    HardLight,
-    #[serde(rename = "hue")]
-    Hue,
-    #[serde(rename = "lighten")]
-    Lighten,
-    #[serde(rename = "luminosity")]
-    Luminosity,
-    #[serde(rename = "multiply")]
-    Multiply,
-    #[serde(rename = "overlay")]
-    Overlay,
-    #[serde(rename = "saturation")]
-    Saturation,
-    #[serde(rename = "screen")]
-    Screen,
-    #[serde(rename = "soft-light")]
-    SoftLight,
-}
-
-/// The mouse cursor used over the mark. Any valid [CSS cursor
-/// type](https://developer.mozilla.org/en-US/docs/Web/CSS/cursor#Values) can be used.
-///
-/// The mouse cursor used over the interval mark. Any valid [CSS cursor
-/// type](https://developer.mozilla.org/en-US/docs/Web/CSS/cursor#Values) can be used.
-///
-/// The mouse cursor used over the view. Any valid [CSS cursor
-/// type](https://developer.mozilla.org/en-US/docs/Web/CSS/cursor#Values) can be used.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Cursor {
-    #[serde(rename = "alias")]
-    Alias,
-    #[serde(rename = "all-scroll")]
-    AllScroll,
-    #[serde(rename = "auto")]
-    Auto,
-    #[serde(rename = "cell")]
-    Cell,
-    #[serde(rename = "col-resize")]
-    ColResize,
-    #[serde(rename = "context-menu")]
-    ContextMenu,
-    #[serde(rename = "copy")]
-    Copy,
-    #[serde(rename = "crosshair")]
-    Crosshair,
-    #[serde(rename = "default")]
-    Default,
-    #[serde(rename = "e-resize")]
-    EResize,
-    #[serde(rename = "ew-resize")]
-    EwResize,
-    #[serde(rename = "grab")]
-    Grab,
-    #[serde(rename = "grabbing")]
-    Grabbing,
-    #[serde(rename = "help")]
-    Help,
-    #[serde(rename = "move")]
-    Move,
-    #[serde(rename = "n-resize")]
-    NResize,
-    #[serde(rename = "ne-resize")]
-    NeResize,
-    #[serde(rename = "nesw-resize")]
-    NeswResize,
-    #[serde(rename = "no-drop")]
-    NoDrop,
-    #[serde(rename = "none")]
-    None,
-    #[serde(rename = "not-allowed")]
-    NotAllowed,
-    #[serde(rename = "ns-resize")]
-    NsResize,
-    #[serde(rename = "nw-resize")]
-    NwResize,
-    #[serde(rename = "nwse-resize")]
-    NwseResize,
-    #[serde(rename = "pointer")]
-    Pointer,
-    #[serde(rename = "progress")]
-    Progress,
-    #[serde(rename = "row-resize")]
-    RowResize,
-    #[serde(rename = "s-resize")]
-    SResize,
-    #[serde(rename = "se-resize")]
-    SeResize,
-    #[serde(rename = "sw-resize")]
-    SwResize,
-    #[serde(rename = "text")]
-    Text,
-    #[serde(rename = "vertical-text")]
-    VerticalText,
-    #[serde(rename = "w-resize")]
-    WResize,
-    #[serde(rename = "wait")]
-    Wait,
-    #[serde(rename = "zoom-in")]
-    ZoomIn,
-    #[serde(rename = "zoom-out")]
-    ZoomOut,
-}
-
-/// The direction of the text. One of `"ltr"` (left-to-right) or `"rtl"` (right-to-left).
-/// This property determines on which side is truncated in response to the limit parameter.
-///
-/// __Default value:__ `"ltr"`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TextDirection {
-    #[serde(rename = "ltr")]
-    Ltr,
-    #[serde(rename = "rtl")]
-    Rtl,
-}
-
-/// The line interpolation method to use for line and area marks. One of the following:
-/// - `"linear"`: piecewise linear segments, as in a polyline.
-/// - `"linear-closed"`: close the linear segments to form a polygon.
-/// - `"step"`: alternate between horizontal and vertical segments, as in a step function.
-/// - `"step-before"`: alternate between vertical and horizontal segments, as in a step
-/// function.
-/// - `"step-after"`: alternate between horizontal and vertical segments, as in a step
-/// function.
-/// - `"basis"`: a B-spline, with control point duplication on the ends.
-/// - `"basis-open"`: an open B-spline; may not intersect the start or end.
-/// - `"basis-closed"`: a closed B-spline, as in a loop.
-/// - `"cardinal"`: a Cardinal spline, with control point duplication on the ends.
-/// - `"cardinal-open"`: an open Cardinal spline; may not intersect the start or end, but
-/// will intersect other control points.
-/// - `"cardinal-closed"`: a closed Cardinal spline, as in a loop.
-/// - `"bundle"`: equivalent to basis, except the tension parameter is used to straighten the
-/// spline.
-/// - `"monotone"`: cubic interpolation that preserves monotonicity in y.
-///
-/// The line interpolation method for the error band. One of the following:
-/// - `"linear"`: piecewise linear segments, as in a polyline.
-/// - `"linear-closed"`: close the linear segments to form a polygon.
-/// - `"step"`: a piecewise constant function (a step function) consisting of alternating
-/// horizontal and vertical lines. The y-value changes at the midpoint of each pair of
-/// adjacent x-values.
-/// - `"step-before"`: a piecewise constant function (a step function) consisting of
-/// alternating horizontal and vertical lines. The y-value changes before the x-value.
-/// - `"step-after"`: a piecewise constant function (a step function) consisting of
-/// alternating horizontal and vertical lines. The y-value changes after the x-value.
-/// - `"basis"`: a B-spline, with control point duplication on the ends.
-/// - `"basis-open"`: an open B-spline; may not intersect the start or end.
-/// - `"basis-closed"`: a closed B-spline, as in a loop.
-/// - `"cardinal"`: a Cardinal spline, with control point duplication on the ends.
-/// - `"cardinal-open"`: an open Cardinal spline; may not intersect the start or end, but
-/// will intersect other control points.
-/// - `"cardinal-closed"`: a closed Cardinal spline, as in a loop.
-/// - `"bundle"`: equivalent to basis, except the tension parameter is used to straighten the
-/// spline.
-/// - `"monotone"`: cubic interpolation that preserves monotonicity in y.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Interpolate {
-    #[serde(rename = "basis")]
-    Basis,
-    #[serde(rename = "basis-closed")]
-    BasisClosed,
-    #[serde(rename = "basis-open")]
-    BasisOpen,
-    #[serde(rename = "bundle")]
-    Bundle,
-    #[serde(rename = "cardinal")]
-    Cardinal,
-    #[serde(rename = "cardinal-closed")]
-    CardinalClosed,
-    #[serde(rename = "cardinal-open")]
-    CardinalOpen,
-    #[serde(rename = "catmull-rom")]
-    CatmullRom,
-    #[serde(rename = "linear")]
-    Linear,
-    #[serde(rename = "linear-closed")]
-    LinearClosed,
-    #[serde(rename = "monotone")]
-    Monotone,
-    #[serde(rename = "natural")]
-    Natural,
-    #[serde(rename = "step")]
-    Step,
-    #[serde(rename = "step-after")]
-    StepAfter,
-    #[serde(rename = "step-before")]
-    StepBefore,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Invalid {
-    #[serde(rename = "filter")]
-    Filter,
-}
-
-/// The stroke line join method. One of `"miter"`, `"round"` or `"bevel"`.
-///
-/// __Default value:__ `"miter"`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum StrokeJoin {
-    #[serde(rename = "bevel")]
-    Bevel,
-    #[serde(rename = "miter")]
-    Miter,
-    #[serde(rename = "round")]
-    Round,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Content {
-    #[serde(rename = "data")]
-    Data,
-    #[serde(rename = "encoding")]
-    Encoding,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum XEnum {
-    #[serde(rename = "width")]
-    Width,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum YEnum {
-    #[serde(rename = "height")]
-    Height,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum PointEnum {
-    #[serde(rename = "transparent")]
-    Transparent,
-}
-
-/// The mark type. This could a primitive mark type (one of `"bar"`, `"circle"`, `"square"`,
-/// `"tick"`, `"line"`, `"area"`, `"point"`, `"geoshape"`, `"rule"`, and `"text"`) or a
-/// composite mark type (`"boxplot"`, `"errorband"`, `"errorbar"`).
-///
-/// All types of primitive marks.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Mark {
-    #[serde(rename = "arc")]
-    Arc,
-    #[serde(rename = "area")]
-    Area,
-    #[serde(rename = "bar")]
-    Bar,
-    #[serde(rename = "boxplot")]
-    Boxplot,
-    #[serde(rename = "circle")]
-    Circle,
-    #[serde(rename = "errorband")]
-    Errorband,
-    #[serde(rename = "errorbar")]
-    Errorbar,
-    #[serde(rename = "geoshape")]
-    Geoshape,
-    #[serde(rename = "image")]
-    Image,
-    #[serde(rename = "line")]
-    Line,
-    #[serde(rename = "point")]
-    Point,
-    #[serde(rename = "rect")]
-    Rect,
-    #[serde(rename = "rule")]
-    Rule,
-    #[serde(rename = "square")]
-    Square,
-    #[serde(rename = "text")]
-    Text,
-    #[serde(rename = "tick")]
-    Tick,
-    #[serde(rename = "trail")]
-    Trail,
-}
-
-/// The extent of the band. Available options include:
-/// - `"ci"`: Extend the band to the confidence interval of the mean.
-/// - `"stderr"`: The size of band are set to the value of standard error, extending from the
-/// mean.
-/// - `"stdev"`: The size of band are set to the value of standard deviation, extending from
-/// the mean.
-/// - `"iqr"`: Extend the band to the q1 and q3.
-///
-/// __Default value:__ `"stderr"`.
-///
-/// The extent of the rule. Available options include:
-/// - `"ci"`: Extend the rule to the confidence interval of the mean.
-/// - `"stderr"`: The size of rule are set to the value of standard error, extending from the
-/// mean.
-/// - `"stdev"`: The size of rule are set to the value of standard deviation, extending from
-/// the mean.
-/// - `"iqr"`: Extend the rule to the q1 and q3.
-///
-/// __Default value:__ `"stderr"`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ExtentExtent {
-    #[serde(rename = "ci")]
-    Ci,
-    #[serde(rename = "iqr")]
-    Iqr,
-    #[serde(rename = "min-max")]
-    MinMax,
-    #[serde(rename = "stderr")]
-    Stderr,
-    #[serde(rename = "stdev")]
-    Stdev,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum LegendBinding {
-    #[serde(rename = "legend")]
-    Legend,
-    #[serde(rename = "scales")]
-    Scales,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum MarkType {
-    #[serde(rename = "arc")]
-    Arc,
-    #[serde(rename = "area")]
-    Area,
-    #[serde(rename = "group")]
-    Group,
-    #[serde(rename = "image")]
-    Image,
-    #[serde(rename = "line")]
-    Line,
-    #[serde(rename = "path")]
-    Path,
-    #[serde(rename = "rect")]
-    Rect,
-    #[serde(rename = "rule")]
-    Rule,
-    #[serde(rename = "shape")]
-    Shape,
-    #[serde(rename = "symbol")]
-    Symbol,
-    #[serde(rename = "text")]
-    Text,
-    #[serde(rename = "trail")]
-    Trail,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Source {
-    #[serde(rename = "scope")]
-    Scope,
-    #[serde(rename = "view")]
-    View,
-    #[serde(rename = "window")]
-    Window,
-}
-
-/// With layered and multi-view displays, a strategy that determines how selections' data
-/// queries are resolved when applied in a filter transform, conditional encoding rule, or
-/// scale domain.
-///
-/// One of:
-/// - `"global"` -- only one brush exists for the entire SPLOM. When the user begins to drag,
-/// any previous brushes are cleared, and a new one is constructed.
-/// - `"union"` -- each cell contains its own brush, and points are highlighted if they lie
-/// within _any_ of these individual brushes.
-/// - `"intersect"` -- each cell contains its own brush, and points are highlighted only if
-/// they fall within _all_ of these individual brushes.
-///
-/// __Default value:__ `global`.
-///
-/// __See also:__ [`resolve`
-/// examples](https://vega.github.io/vega-lite/docs/selection.html#resolve) in the
-/// documentation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum SelectionResolution {
-    #[serde(rename = "global")]
-    Global,
-    #[serde(rename = "intersect")]
-    Intersect,
-    #[serde(rename = "union")]
-    Union,
-}
-
-/// Determines the default event processing and data query for the selection. Vega-Lite
-/// currently supports two selection types:
-///
-/// - `"point"` -- to select multiple discrete data values; the first value is selected on
-/// `click` and additional values toggled on shift-click.
-/// - `"interval"` -- to select a continuous range of data values on `drag`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum SelectionType {
-    #[serde(rename = "interval")]
-    Interval,
-    #[serde(rename = "point")]
-    Point,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ProjectionType {
-    #[serde(rename = "albers")]
-    Albers,
-    #[serde(rename = "albersUsa")]
-    AlbersUsa,
-    #[serde(rename = "azimuthalEqualArea")]
-    AzimuthalEqualArea,
-    #[serde(rename = "azimuthalEquidistant")]
-    AzimuthalEquidistant,
-    #[serde(rename = "conicConformal")]
-    ConicConformal,
-    #[serde(rename = "conicEqualArea")]
-    ConicEqualArea,
-    #[serde(rename = "conicEquidistant")]
-    ConicEquidistant,
-    #[serde(rename = "equalEarth")]
-    EqualEarth,
-    #[serde(rename = "equirectangular")]
-    Equirectangular,
-    #[serde(rename = "gnomonic")]
-    Gnomonic,
-    #[serde(rename = "identity")]
-    Identity,
-    #[serde(rename = "mercator")]
-    Mercator,
-    #[serde(rename = "naturalEarth1")]
-    NaturalEarth1,
-    #[serde(rename = "orthographic")]
-    Orthographic,
-    #[serde(rename = "stereographic")]
-    Stereographic,
-    #[serde(rename = "transverseMercator")]
-    TransverseMercator,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ResolveMode {
-    #[serde(rename = "independent")]
-    Independent,
-    #[serde(rename = "shared")]
-    Shared,
-}
-
-/// Default title orientation (`"top"`, `"bottom"`, `"left"`, or `"right"`)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TitleOrient {
-    #[serde(rename = "bottom")]
-    Bottom,
-    #[serde(rename = "left")]
-    Left,
-    #[serde(rename = "none")]
-    None,
-    #[serde(rename = "right")]
-    Right,
-    #[serde(rename = "top")]
-    Top,
-}
-
-/// The aggregation operation to apply to the fields (e.g., `"sum"`, `"average"`, or
-/// `"count"`). See the [full list of supported aggregation
-/// operations](https://vega.github.io/vega-lite/docs/aggregate.html#ops) for more
-/// information.
-///
-/// The aggregation operation to apply (e.g., `"sum"`, `"average"` or `"count"`). See the
-/// list of all supported operations
-/// [here](https://vega.github.io/vega-lite/docs/aggregate.html#ops).
-///
-/// The aggregation operation to apply to grouped `value` field values. __Default value:__
-/// `sum`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum AggregateOp {
-    #[serde(rename = "argmax")]
-    Argmax,
-    #[serde(rename = "argmin")]
-    Argmin,
-    #[serde(rename = "average")]
-    Average,
-    #[serde(rename = "ci0")]
-    Ci0,
-    #[serde(rename = "ci1")]
-    Ci1,
-    #[serde(rename = "count")]
-    Count,
-    #[serde(rename = "distinct")]
-    Distinct,
-    #[serde(rename = "max")]
-    Max,
-    #[serde(rename = "mean")]
-    Mean,
-    #[serde(rename = "median")]
-    Median,
-    #[serde(rename = "min")]
-    Min,
-    #[serde(rename = "missing")]
-    Missing,
-    #[serde(rename = "product")]
-    Product,
-    #[serde(rename = "q1")]
-    Q1,
-    #[serde(rename = "q3")]
-    Q3,
-    #[serde(rename = "stderr")]
-    Stderr,
-    #[serde(rename = "stdev")]
-    Stdev,
-    #[serde(rename = "stdevp")]
-    Stdevp,
-    #[serde(rename = "sum")]
-    Sum,
-    #[serde(rename = "valid")]
-    Valid,
-    #[serde(rename = "values")]
-    Values,
-    #[serde(rename = "variance")]
-    Variance,
-    #[serde(rename = "variancep")]
-    Variancep,
-}
-
-/// The imputation method to use for the field value of imputed data objects. One of
-/// `"value"`, `"mean"`, `"median"`, `"max"` or `"min"`.
-///
-/// __Default value:__  `"value"`
-///
-/// The functional form of the regression model. One of `"linear"`, `"log"`, `"exp"`,
-/// `"pow"`, `"quad"`, or `"poly"`.
-///
-/// __Default value:__ `"linear"`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TransformMethod {
-    #[serde(rename = "exp")]
-    Exp,
-    #[serde(rename = "linear")]
-    Linear,
-    #[serde(rename = "log")]
-    Log,
-    #[serde(rename = "max")]
-    Max,
-    #[serde(rename = "mean")]
-    Mean,
-    #[serde(rename = "median")]
-    Median,
-    #[serde(rename = "min")]
-    Min,
-    #[serde(rename = "poly")]
-    Poly,
-    #[serde(rename = "pow")]
-    Pow,
-    #[serde(rename = "quad")]
-    Quad,
-    #[serde(rename = "value")]
-    Value,
-}
-
-/// The window or aggregation operation to apply within a window (e.g., `"rank"`, `"lead"`,
-/// `"sum"`, `"average"` or `"count"`). See the list of all supported operations
-/// [here](https://vega.github.io/vega-lite/docs/window.html#ops).
-///
-/// The aggregation operation to apply to the fields (e.g., `"sum"`, `"average"`, or
-/// `"count"`). See the [full list of supported aggregation
-/// operations](https://vega.github.io/vega-lite/docs/aggregate.html#ops) for more
-/// information.
-///
-/// The aggregation operation to apply (e.g., `"sum"`, `"average"` or `"count"`). See the
-/// list of all supported operations
-/// [here](https://vega.github.io/vega-lite/docs/aggregate.html#ops).
-///
-/// The aggregation operation to apply to grouped `value` field values. __Default value:__
-/// `sum`
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Op {
-    #[serde(rename = "argmax")]
-    Argmax,
-    #[serde(rename = "argmin")]
-    Argmin,
-    #[serde(rename = "average")]
-    Average,
-    #[serde(rename = "ci0")]
-    Ci0,
-    #[serde(rename = "ci1")]
-    Ci1,
-    #[serde(rename = "count")]
-    Count,
-    #[serde(rename = "cume_dist")]
-    CumeDist,
-    #[serde(rename = "dense_rank")]
-    DenseRank,
-    #[serde(rename = "distinct")]
-    Distinct,
-    #[serde(rename = "first_value")]
-    FirstValue,
-    #[serde(rename = "lag")]
-    Lag,
-    #[serde(rename = "last_value")]
-    LastValue,
-    #[serde(rename = "lead")]
-    Lead,
-    #[serde(rename = "max")]
-    Max,
-    #[serde(rename = "mean")]
-    Mean,
-    #[serde(rename = "median")]
-    Median,
-    #[serde(rename = "min")]
-    Min,
-    #[serde(rename = "missing")]
-    Missing,
-    #[serde(rename = "nth_value")]
-    NthValue,
-    #[serde(rename = "ntile")]
-    Ntile,
-    #[serde(rename = "percent_rank")]
-    PercentRank,
-    #[serde(rename = "product")]
-    Product,
-    #[serde(rename = "q1")]
-    Q1,
-    #[serde(rename = "q3")]
-    Q3,
-    #[serde(rename = "rank")]
-    Rank,
-    #[serde(rename = "row_number")]
-    RowNumber,
-    #[serde(rename = "stderr")]
-    Stderr,
-    #[serde(rename = "stdev")]
-    Stdev,
-    #[serde(rename = "stdevp")]
-    Stdevp,
-    #[serde(rename = "sum")]
-    Sum,
-    #[serde(rename = "valid")]
-    Valid,
-    #[serde(rename = "values")]
-    Values,
-    #[serde(rename = "variance")]
-    Variance,
-    #[serde(rename = "variancep")]
-    Variancep,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ExtentEnum {
-    #[serde(rename = "min-max")]
-    MinMax,
-}
-
-/// The extent of the band. Available options include:
-/// - `"ci"`: Extend the band to the confidence interval of the mean.
-/// - `"stderr"`: The size of band are set to the value of standard error, extending from the
-/// mean.
-/// - `"stdev"`: The size of band are set to the value of standard deviation, extending from
-/// the mean.
-/// - `"iqr"`: Extend the band to the q1 and q3.
-///
-/// __Default value:__ `"stderr"`.
-///
-/// The extent of the rule. Available options include:
-/// - `"ci"`: Extend the rule to the confidence interval of the mean.
-/// - `"stderr"`: The size of rule are set to the value of standard error, extending from the
-/// mean.
-/// - `"stdev"`: The size of rule are set to the value of standard deviation, extending from
-/// the mean.
-/// - `"iqr"`: Extend the rule to the q1 and q3.
-///
-/// __Default value:__ `"stderr"`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ErrorbandExtent {
-    #[serde(rename = "ci")]
-    Ci,
-    #[serde(rename = "iqr")]
-    Iqr,
-    #[serde(rename = "stderr")]
-    Stderr,
-    #[serde(rename = "stdev")]
-    Stdev,
-}
-
-/// Defines how Vega-Lite generates title for fields. There are three possible styles:
-/// - `"verbal"` (Default) - displays function in a verbal style (e.g., "Sum of field",
-/// "Year-month of date", "field (binned)").
-/// - `"function"` - displays function using parentheses and capitalized texts (e.g.,
-/// "SUM(field)", "YEARMONTH(date)", "BIN(field)").
-/// - `"plain"` - displays only the field name without functions (e.g., "field", "date",
-/// "field").
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum FieldTitle {
-    #[serde(rename = "functional")]
-    Functional,
-    #[serde(rename = "plain")]
-    Plain,
-    #[serde(rename = "verbal")]
-    Verbal,
-}
-
-/// The orientation of a non-stacked bar, tick, area, and line charts. The value is either
-/// horizontal (default) or vertical.
-/// - For bar, rule and tick, this determines whether the size of the bar and tick should be
-/// applied to x or y dimension.
-/// - For area, this property determines the orient property of the Vega output.
-/// - For line and trail marks, this property determines the sort order of the points in the
-/// line if `config.sortLineBy` is not specified. For stacked charts, this is always
-/// determined by the orientation of the stack; therefore explicitly specified value will be
-/// ignored.
-///
-/// The direction of the legend, one of `"vertical"` or `"horizontal"`.
-///
-/// __Default value:__
-/// - For top-/bottom-`orient`ed legends, `"horizontal"`
-/// - For left-/right-`orient`ed legends, `"vertical"`
-/// - For top/bottom-left/right-`orient`ed legends, `"horizontal"` for gradient legends and
-/// `"vertical"` for symbol legends.
-///
-/// The default direction (`"horizontal"` or `"vertical"`) for gradient legends.
-///
-/// __Default value:__ `"vertical"`.
-///
-/// The default direction (`"horizontal"` or `"vertical"`) for symbol legends.
-///
-/// __Default value:__ `"vertical"`.
-///
-/// Orientation of the box plot. This is normally automatically determined based on types of
-/// fields on x and y channels. However, an explicit `orient` be specified when the
-/// orientation is ambiguous.
-///
-/// __Default value:__ `"vertical"`.
-///
-/// Orientation of the error bar. This is normally automatically determined, but can be
-/// specified when the orientation is ambiguous and cannot be automatically determined.
-///
-/// Orientation of the error band. This is normally automatically determined, but can be
-/// specified when the orientation is ambiguous and cannot be automatically determined.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum AxisOrient {
-    #[serde(rename = "bottom")]
-    Bottom,
-    #[serde(rename = "horizontal")]
-    Horizontal,
-    #[serde(rename = "left")]
-    Left,
-    #[serde(rename = "right")]
-    Right,
-    #[serde(rename = "top")]
-    Top,
-    #[serde(rename = "vertical")]
-    Vertical,
 }

@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             EdEncodingBuilder::default()
                 .x(XClassBuilder::default()
                     .field("date")
-                    .time_unit(TimeUnit::Month)
+                    .time_unit(BinnedTimeUnitEnum::Month)
                     .position_def_type(Type::Ordinal)
                     .title("Month of the year")
                     .build()?)

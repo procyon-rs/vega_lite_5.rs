@@ -65,7 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
               XClassBuilder::default()
                 .field("date")
                 .position_def_type(Type::Temporal)
-                .time_unit(TimeUnit::Monthdate)
+                .time_unit(BinnedTimeUnitEnum::Monthdate)
                 .axis(AxisBuilder::default().title("date").format("%b").build()?)
                 .build()?,
             )
